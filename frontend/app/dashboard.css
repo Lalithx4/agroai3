@@ -747,3 +747,172 @@
 [data-theme="light"] .bento-card:hover .card-icon-wrap {
     background: rgba(0, 0, 0, 0.08);
 }
+
+/* === Mobile Optimizations === */
+@media (max-width: 479px) {
+    .dashboard-canvas {
+        padding: 56px 10px 16px;
+    }
+
+    .dashboard-content {
+        gap: 12px;
+    }
+
+    .hero-glass {
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    .hero-icon-wrap {
+        width: 56px;
+        height: 56px;
+    }
+
+    .hero-icon-wrap svg {
+        width: 28px;
+        height: 28px;
+    }
+
+    .hero-title {
+        font-size: 1.5rem;
+    }
+
+    .hero-subtitle {
+        font-size: 0.85rem;
+    }
+
+    .hero-badges {
+        gap: 6px;
+    }
+
+    .hero-badge {
+        padding: 4px 10px;
+        font-size: 0.7rem;
+    }
+
+    .stats-panel {
+        padding: 12px;
+        border-radius: 16px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .stat-glass {
+        padding: 10px;
+        flex: 1 1 calc(50% - 4px);
+        min-width: 0;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+    }
+
+    .stat-icon {
+        width: 28px;
+        height: 28px;
+    }
+
+    .stat-divider {
+        display: none;
+    }
+
+    .bento-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .bento-card {
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .bento-large {
+        grid-column: span 2;
+        min-height: 140px;
+    }
+
+    .bento-medium {
+        grid-column: span 1;
+    }
+
+    .bento-small {
+        grid-column: span 1;
+    }
+
+    .card-icon-wrap {
+        width: 40px;
+        height: 40px;
+    }
+
+    .card-icon-wrap svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .card-title {
+        font-size: 0.9rem;
+    }
+
+    .card-desc {
+        font-size: 0.75rem;
+        display: none;
+    }
+
+    .bento-large .card-desc {
+        display: block;
+    }
+
+    .card-arrow {
+        width: 28px;
+        height: 28px;
+    }
+
+    .orb {
+        filter: blur(60px);
+        opacity: 0.35;
+    }
+
+    .orb-1 {
+        width: 200px;
+        height: 200px;
+    }
+
+    .orb-2 {
+        width: 150px;
+        height: 150px;
+    }
+
+    .orb-3 {
+        width: 120px;
+        height: 120px;
+    }
+
+    .reset-button {
+        padding: 10px 16px;
+        font-size: 0.85rem;
+        border-radius: 12px;
+    }
+}
+
+/* === Touch device optimizations === */
+@media (hover: none) and (pointer: coarse) {
+    .bento-card:hover {
+        transform: none;
+    }
+
+    .bento-card:active {
+        transform: scale(0.98);
+    }
+
+    .reset-button:hover {
+        transform: none;
+    }
+
+    .reset-button:active {
+        transform: scale(0.98);
+    }
+}

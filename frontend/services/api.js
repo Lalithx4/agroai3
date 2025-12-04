@@ -1,16 +1,10 @@
 /**
  * CropMagix - API Service
- * Handles all backend communication
+ * Handles all backend communication via Next.js API routes
  */
 
 const API_CONFIG = {
-    BASE_URL: typeof window !== 'undefined' 
-        ? localStorage.getItem('cropmagix_api_url') || 
-          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:8000'
-            : 'https://agroai-backend.onrender.com')
-        : 'http://localhost:8000',
-    TIMEOUT: 30000,
+    TIMEOUT: 60000, // 60 seconds for AI processing
     RETRY_ATTEMPTS: 2
 };
 
@@ -24,10 +18,8 @@ async function blobToBase64(blob) {
 }
 
 async function apiRequest(endpoint, options = {}) {
-    const baseUrl = typeof window !== 'undefined' 
-        ? localStorage.getItem('cropmagix_api_url') || API_CONFIG.BASE_URL
-        : API_CONFIG.BASE_URL;
-    const url = `${baseUrl}${endpoint}`;
+    // Use relative URLs for Next.js API routes (same server)
+    const url = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     
     const defaultOptions = {
         headers: {
@@ -82,39 +74,25 @@ export async function analyzeHealth(imageInput, plantType = null, language = nul
     });
 }
 
-export async function chatWithPlant(message, plantType = 'Unknown', healthStatus = 'healthy', language = null) {
+export async function chatWithPlant(message, plantType = 'Unknown', healthStatus = 'healthy', diseases = [], language = null) {
     const lang = language || (typeof window !== 'undefined' ? localStorage.getItem('cropmagix-lang') : 'en') || 'en';
-    return apiRequest('/api/chat-with-plant', {
+    return apiRequest('/api/chat', {
         method: 'POST',
         body: JSON.stringify({
             message: message,
             plant_type: plantType,
             health_status: healthStatus,
-            diseases: [],
+            diseases: diseases,
             conversation_history: [],
             language: lang
         })
     });
 }
 
-export async function generateFuture(imageInput, disease, daysAhead = 14, scenario = 'untreated', language = null) {
-    let imageBase64 = imageInput;
-    
-    if (imageInput instanceof Blob || imageInput instanceof File) {
-        imageBase64 = await blobToBase64(imageInput);
-    }
-    
+export async function getWeather(latitude, longitude, language = null) {
     const lang = language || (typeof window !== 'undefined' ? localStorage.getItem('cropmagix-lang') : 'en') || 'en';
-    
-    return apiRequest('/api/generate-future', {
-        method: 'POST',
-        body: JSON.stringify({
-            image_base64: imageBase64,
-            scenario: scenario,
-            disease: disease,
-            days_ahead: daysAhead,
-            language: lang
-        })
+    return apiRequest(`/api/weather?lat=${latitude}&lon=${longitude}&language=${lang}`, {
+        method: 'GET'
     });
 }
 
@@ -142,7 +120,7 @@ export async function getSoilWeather(latitude, longitude, soilImageInput = null,
 
 export async function healthCheck() {
     try {
-        const result = await apiRequest('/health');
+        const result = await apiRequest('/api/health');
         return result.status === 'healthy';
     } catch (e) {
         return false;
@@ -150,14 +128,10 @@ export async function healthCheck() {
 }
 
 export function setBaseUrl(url) {
-    if (typeof window !== 'undefined') {
-        localStorage.setItem('cropmagix_api_url', url);
-    }
+    // Not needed for internal API routes
+    console.log('API routes are internal, base URL not needed');
 }
 
 export function getBaseUrl() {
-    if (typeof window !== 'undefined') {
-        return localStorage.getItem('cropmagix_api_url') || API_CONFIG.BASE_URL;
-    }
-    return API_CONFIG.BASE_URL;
+    return '/api';
 }

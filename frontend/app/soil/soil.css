@@ -1,0 +1,966 @@
+/* ============================================
+   SOIL ANALYSIS PAGE - PREMIUM DESIGN
+============================================ */
+
+.soil-page {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #0a0f1a 0%, #1a1f2e 100%);
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+/* Header */
+.soil-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.soil-header h1 {
+    flex: 1;
+    font-size: 1.25rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.soil-header .back-btn,
+.soil-header .reset-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* Content */
+.soil-content {
+    padding: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Start Options */
+.start-options {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 20px 0;
+}
+
+.soil-hero {
+    text-align: center;
+    padding: 32px 20px;
+}
+
+.hero-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.soil-hero h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 8px;
+}
+
+.soil-hero p {
+    color: #94a3b8;
+    font-size: 0.95rem;
+}
+
+.option-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.option-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 24px 16px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    color: #f8fafc;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.option-btn:hover {
+    transform: translateY(-4px);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.option-btn.camera:hover {
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.2);
+}
+
+.option-btn.upload:hover {
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+}
+
+.option-btn span {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.option-btn small {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.tips-section {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 16px;
+    padding: 16px 20px;
+}
+
+.tips-section h4 {
+    color: #10b981;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+}
+
+.tips-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tips-section li {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    padding: 6px 0;
+    padding-left: 20px;
+    position: relative;
+}
+
+.tips-section li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #10b981;
+}
+
+/* Camera Container */
+.camera-container {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    background: #000;
+    aspect-ratio: 4/3;
+}
+
+.camera-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.camera-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.focus-ring {
+    width: 200px;
+    height: 200px;
+    border: 3px solid rgba(16, 185, 129, 0.8);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.7; }
+}
+
+.camera-hint {
+    position: absolute;
+    bottom: 80px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.camera-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.capture-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: 4px solid rgba(255, 255, 255, 0.9);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.5);
+}
+
+.cancel-btn, .upload-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* Analyzing State */
+.analyzing-container {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+}
+
+.captured-image {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-radius: 24px;
+}
+
+.analyzing-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: white;
+}
+
+.analyzing-overlay p {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.analyzing-steps {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.analyzing-steps .step {
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 100px;
+    font-size: 0.8rem;
+    opacity: 0.5;
+}
+
+.analyzing-steps .step.active {
+    background: rgba(16, 185, 129, 0.3);
+    opacity: 1;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Results Section */
+.results-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Overview Card */
+.overview-card {
+    display: grid;
+    grid-template-columns: 100px 1fr 80px;
+    gap: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    align-items: center;
+}
+
+.soil-image-preview img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 16px;
+}
+
+.overview-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.soil-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(16, 185, 129, 0.2);
+    border-radius: 100px;
+    color: #10b981;
+    font-size: 0.75rem;
+    font-weight: 600;
+    width: fit-content;
+}
+
+.overview-info h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0;
+}
+
+.texture-info {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+/* Health Score Ring */
+.health-score-ring {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.health-score-ring svg {
+    transform: rotate(-90deg);
+}
+
+.score-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 8;
+}
+
+.score-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dasharray 1s ease;
+}
+
+.score-value {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.score-value .number {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #f8fafc;
+    line-height: 1;
+}
+
+.score-value .label {
+    font-size: 0.65rem;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+/* Quick Stats */
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.stat-item svg {
+    color: #10b981;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    color: #64748b;
+}
+
+.stat-value {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+/* Summary Card */
+.summary-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 16px;
+}
+
+.summary-icon {
+    font-size: 1.5rem;
+}
+
+.summary-card p {
+    color: #f8fafc;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.priority-action {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    color: #10b981;
+}
+
+/* Collapsible Sections */
+.collapsible-section {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 16px;
+    background: none;
+    border: none;
+    color: #f8fafc;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+}
+
+.section-header svg:first-child {
+    color: #10b981;
+}
+
+.section-header span {
+    flex: 1;
+}
+
+.section-content {
+    padding: 0 16px 16px;
+}
+
+/* Nutrient Grid */
+.nutrient-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.nutrient-card {
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    border-left: 3px solid;
+}
+
+.nutrient-card.nitrogen { border-color: #22c55e; }
+.nutrient-card.phosphorus { border-color: #8b5cf6; }
+.nutrient-card.potassium { border-color: #f59e0b; }
+.nutrient-card.calcium { border-color: #06b6d4; }
+.nutrient-card.magnesium { border-color: #ec4899; }
+
+.nutrient-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.nutrient-symbol {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #f8fafc;
+}
+
+.nutrient-name {
+    flex: 1;
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+
+.nutrient-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.nutrient-icon.high { color: #22c55e; }
+.nutrient-icon.adequate { color: #64748b; }
+.nutrient-icon.low { color: #f59e0b; }
+.nutrient-icon.deficient { color: #ef4444; }
+
+.nutrient-level {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #f8fafc;
+    text-transform: capitalize;
+    margin-bottom: 4px;
+}
+
+.nutrient-remedy {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Micronutrients */
+.micronutrients h4 {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin-bottom: 10px;
+}
+
+.micro-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.micro-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 100px;
+}
+
+.micro-name {
+    font-size: 0.8rem;
+    color: #f8fafc;
+    text-transform: capitalize;
+}
+
+.micro-status {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-weight: 600;
+}
+
+.micro-status.adequate { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.micro-status.deficient { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+/* Crops Grid */
+.crops-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.crop-card {
+    display: flex;
+    gap: 14px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 14px;
+    border-left: 4px solid;
+}
+
+.crop-card.suitability-excellent { border-color: #22c55e; }
+.crop-card.suitability-good { border-color: #3b82f6; }
+.crop-card.suitability-moderate { border-color: #f59e0b; }
+.crop-card.suitability-poor { border-color: #ef4444; }
+
+.crop-icon {
+    font-size: 2rem;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+
+.crop-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.crop-info h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f8fafc;
+    margin: 0;
+}
+
+.suitability-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    width: fit-content;
+}
+
+.crop-info p {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+.yield-badge {
+    font-size: 0.75rem;
+    color: #10b981;
+}
+
+/* Avoid Crops */
+.avoid-crops {
+    margin-top: 16px;
+    padding: 14px;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 12px;
+}
+
+.avoid-crops h4 {
+    font-size: 0.9rem;
+    color: #ef4444;
+    margin: 0 0 10px 0;
+}
+
+.avoid-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.avoid-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+
+.avoid-name {
+    color: #f8fafc;
+    font-weight: 500;
+}
+
+.avoid-reason {
+    color: #94a3b8;
+}
+
+/* Amendments */
+.amendments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.amendment-card {
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+}
+
+.amendment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.amendment-name {
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+.cost-badge {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 100px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #94a3b8;
+}
+
+.cost-badge.low { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.cost-badge.medium { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+.cost-badge.high { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+.amendment-purpose {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 0 0 10px 0;
+}
+
+.amendment-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.amendment-details .detail {
+    font-size: 0.8rem;
+    color: #64748b;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.amendment-details strong {
+    color: #94a3b8;
+}
+
+.organic-alt {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: #10b981;
+}
+
+/* Timeline Plan */
+.timeline-plan {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.timeline-section {
+    padding: 14px;
+    border-radius: 12px;
+    border-left: 3px solid;
+}
+
+.timeline-section.immediate {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+}
+
+.timeline-section.short-term {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+}
+
+.timeline-section.long-term {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: #22c55e;
+}
+
+.timeline-section h4 {
+    font-size: 0.9rem;
+    color: #f8fafc;
+    margin: 0 0 10px 0;
+}
+
+.timeline-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.timeline-section li {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    padding: 6px 0;
+    padding-left: 16px;
+    position: relative;
+}
+
+.timeline-section li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: inherit;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 20px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s;
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.action-btn.secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #f8fafc;
+}
+
+/* Mobile Responsive */
+@media (max-width: 479px) {
+    .overview-card {
+        grid-template-columns: 80px 1fr 70px;
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .soil-image-preview img {
+        width: 80px;
+        height: 80px;
+    }
+
+    .health-score-ring {
+        width: 70px;
+        height: 70px;
+    }
+
+    .score-value .number {
+        font-size: 1.25rem;
+    }
+
+    .quick-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .nutrient-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .option-buttons {
+        flex-direction: column;
+    }
+}
+
+/* Light Theme */
+[data-theme="light"] .soil-page {
+    background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+[data-theme="light"] .soil-header {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .soil-header h1 {
+    background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+    -webkit-background-clip: text;
+}
+
+[data-theme="light"] .soil-header .back-btn,
+[data-theme="light"] .soil-header .reset-btn {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #1e293b;
+}
+
+[data-theme="light"] .option-btn,
+[data-theme="light"] .overview-card,
+[data-theme="light"] .collapsible-section,
+[data-theme="light"] .nutrient-card,
+[data-theme="light"] .crop-card,
+[data-theme="light"] .amendment-card,
+[data-theme="light"] .stat-item {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .soil-hero h2,
+[data-theme="light"] .overview-info h2,
+[data-theme="light"] .crop-info h4,
+[data-theme="light"] .amendment-name,
+[data-theme="light"] .section-header,
+[data-theme="light"] .summary-card p,
+[data-theme="light"] .score-value .number,
+[data-theme="light"] .nutrient-level,
+[data-theme="light"] .timeline-section h4 {
+    color: #0f172a;
+}
+
+[data-theme="light"] .score-bg {
+    stroke: rgba(0, 0, 0, 0.1);
+}

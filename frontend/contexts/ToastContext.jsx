@@ -1,14 +1,18 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 const ToastContext = createContext(null);
+
+// Counter for unique IDs
+let toastIdCounter = 0;
 
 export function ToastProvider({ children }) {
     const [toasts, setToasts] = useState([]);
 
     const showToast = useCallback((message, type = 'info', duration = 3000) => {
-        const id = Date.now();
+        // Use counter + timestamp + random for guaranteed unique IDs
+        const id = `toast_${++toastIdCounter}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         setToasts(prev => [...prev, { id, message, type }]);
 
         setTimeout(() => {
