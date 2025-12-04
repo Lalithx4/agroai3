@@ -37,7 +37,7 @@ const nextConfig = {
   
   // Environment variables for client-side
   env: {
-    NEXT_PUBLIC_APP_NAME: 'AgroAI',
+    NEXT_PUBLIC_APP_NAME: 'CropmagiX AI',
     NEXT_PUBLIC_APP_VERSION: '1.0.0',
   },
 };

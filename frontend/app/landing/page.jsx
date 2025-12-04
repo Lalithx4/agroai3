@@ -61,7 +61,7 @@ export default function LandingPage() {
 
     const handleGetStarted = () => {
         // Save that user has seen landing
-        localStorage.setItem('agroai_seen_landing', 'true');
+        localStorage.setItem('cropmagix_seen_landing', 'true');
         router.push('/home');
     };
 
@@ -101,12 +101,12 @@ export default function LandingPage() {
                     {/* Title */}
                     <div className="landing-title-wrap">
                         <h1 className="landing-title">
-                            <span className="title-agro">Agro</span>
+                            <span className="title-agro">Cropmagix</span>
                             <span className="title-ai">AI</span>
                         </h1>
                         <div className="title-badge">
                             <Sparkles size={12} />
-                            <span>Powered by Gemini & Cerebras</span>
+                            <span>Powered by KrAIonyx AI</span>
                         </div>
                     </div>
 
@@ -239,28 +239,28 @@ export default function LandingPage() {
             <section className="landing-tech">
                 <h2 className="section-title">
                     <Zap size={24} />
-                    Built with Modern AI
+                    Built with Advanced AI
                 </h2>
                 <div className="tech-grid">
                     <div className="tech-card">
+                        <span className="tech-icon">🧠</span>
+                        <span className="tech-name">KrAIonyx AI</span>
+                        <span className="tech-desc">Core AI intelligence engine</span>
+                    </div>
+                    <div className="tech-card">
                         <span className="tech-icon">✨</span>
-                        <span className="tech-name">Google Gemini 2.0</span>
+                        <span className="tech-name">Advanced ML Models</span>
                         <span className="tech-desc">Vision AI for plant analysis</span>
                     </div>
                     <div className="tech-card">
-                        <span className="tech-icon">⚡</span>
-                        <span className="tech-name">Cerebras</span>
-                        <span className="tech-desc">Ultra-fast LLM inference</span>
-                    </div>
-                    <div className="tech-card">
                         <span className="tech-icon">🎤</span>
-                        <span className="tech-name">Deepgram</span>
-                        <span className="tech-desc">Voice recognition</span>
+                        <span className="tech-name">Voice AI</span>
+                        <span className="tech-desc">Natural voice recognition</span>
                     </div>
                     <div className="tech-card">
-                        <span className="tech-icon">📊</span>
-                        <span className="tech-name">Supabase</span>
-                        <span className="tech-desc">Real-time database</span>
+                        <span className="tech-icon">⚡</span>
+                        <span className="tech-name">Real-time Processing</span>
+                        <span className="tech-desc">Ultra-fast AI inference</span>
                     </div>
                 </div>
             </section>
@@ -290,14 +290,14 @@ export default function LandingPage() {
                 <h2>Ready to Transform Your Farming?</h2>
                 <button className="cta-button large" onClick={handleGetStarted}>
                     <Leaf size={22} />
-                    <span>Launch AgroAI</span>
+                    <span>Launch CropmagiX AI</span>
                     <ArrowRight size={22} />
                 </button>
             </section>
 
             {/* Footer */}
             <footer className="landing-footer">
-                <p>© 2025 AgroAI • Made with 💚 for Farmers</p>
+                <p>© 2025 CropmagiX AI • Made with 💚 for Farmers</p>
             </footer>
         </div>
     );

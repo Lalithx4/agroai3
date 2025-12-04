@@ -10,7 +10,7 @@ export default function RootPage() {
 
     useEffect(() => {
         // Check if user has seen landing page
-        const hasSeenLanding = localStorage.getItem('agroai_seen_landing');
+        const hasSeenLanding = localStorage.getItem('cropmagix_seen_landing');
         
         // Small delay for smooth transition
         setTimeout(() => {
@@ -53,7 +53,7 @@ export default function RootPage() {
                 fontSize: '0.9rem'
             }}>
                 <Loader2 size={18} className="spin" style={{ animation: 'spin 1s linear infinite' }} />
-                <span>Loading AgroAI...</span>
+                <span>Loading CropmagiX AI...</span>
             </div>
             <style jsx global>{`
                 @keyframes spin {
