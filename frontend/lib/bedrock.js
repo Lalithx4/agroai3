@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Vision AI Service for Plant & Soil Analysis
  * Uses Claude Haiku 4.5 on Amazon Bedrock (Converse API).
  *
@@ -58,7 +58,7 @@ function parseJson(text) {
 }
 
 /** Send one image + prompt to Claude Haiku 4.5 and return the parsed JSON reply. */
-async function askVision(prompt, imageBase64, maxTokens = 4096) {
+export async function askVision(prompt, imageBase64, maxTokens = 4096) {
     const { bytes, format } = await prepareImage(imageBase64);
     const response = await client.send(new ConverseCommand({
         modelId: MODEL_ID,
@@ -79,7 +79,7 @@ async function askVision(prompt, imageBase64, maxTokens = 4096) {
 }
 
 /** Text-only call, used for the fallback chat helper. */
-async function askText(prompt, maxTokens = 512) {
+export async function askText(prompt, maxTokens = 512) {
     const response = await client.send(new ConverseCommand({
         modelId: MODEL_ID,
         messages: [{ role: 'user', content: [{ text: prompt }] }],

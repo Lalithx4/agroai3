@@ -7,7 +7,7 @@ import { getStats } from '@/services/cache';
 import {
   Camera, MessageCircle, Cloud, Calendar, Pill, Bug, BarChart3,
   User, WifiOff, RotateCcw, Sparkles, ArrowRight, Leaf, TrendingUp,
-  Shield, Zap, Star, Mountain
+  Shield, Zap, Star, Mountain, Mic
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -80,6 +80,15 @@ export default function HomePage() {
       isAR: true,
       size: 'large',
       gradient: 'emerald'
+    },
+    {
+      icon: Mic,
+      title: 'Voice Doctor',
+      desc: 'Speak, show a leaf, hear the plant answer',
+      href: '/voice-doctor',
+      badge: 'NEW',
+      size: 'medium',
+      gradient: 'purple'
     },
     {
       icon: Mountain,
