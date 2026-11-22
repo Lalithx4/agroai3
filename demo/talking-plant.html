@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CropMagix Doctor Plant - talking face on a real plant photo</title>
+<style>
+  :root{--bg:#eef6e8;--ink:#1d2a22;--g:#1f7a4d;--gd:#0f3d28;--card:#fff;--line:#cfe3c6;--amber:#f0a92e;--red:#d94b3d}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:linear-gradient(135deg,var(--gd),var(--g));color:#fff;padding:18px 20px}
+  header h1{margin:0;font-size:22px}
+  header p{margin:4px 0 0;opacity:.9;font-size:14px}
+  .app{max-width:1100px;margin:18px auto;padding:0 14px;display:grid;grid-template-columns:minmax(300px,1fr) minmax(300px,1fr);gap:16px;align-items:start}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 4px 14px rgba(0,0,0,.05)}
+  .stage{position:relative;background:linear-gradient(#e8f6ff,#f4fbe9 70%);padding-top:48px}
+  .badge{position:absolute;top:14px;left:14px;background:var(--gd);color:#fff;font-size:12px;padding:3px 10px;border-radius:99px;letter-spacing:.04em;text-transform:uppercase}
+  #caption{min-height:54px;text-align:center;font-size:18px;font-weight:600;padding:8px 10px 2px;color:var(--gd)}
+  #photoCanvas{width:100%;display:none;border-radius:12px;touch-action:none;cursor:grab;background:#222}
+  #photoCanvas.drag{cursor:grabbing}
+  #cam{width:100%;display:none;border-radius:12px;background:#000}
+  #empty{border:3px dashed #9cc7a8;border-radius:16px;padding:60px 18px;text-align:center;color:#3d6a4c;background:#f6fcf1}
+  #empty b{font-size:20px;display:block;margin-bottom:8px}
+  #empty.over{background:#e1f5e5;border-color:var(--g)}
+  h3{margin:0 0 8px;font-size:15px}
+  label{font-size:13px;font-weight:600;display:block;margin:10px 0 4px}
+  select,textarea,input[type=range]{width:100%}
+  select,textarea{font:inherit;padding:8px;border:1px solid var(--line);border-radius:10px;background:#fbfff8}
+  textarea{height:92px;resize:vertical}
+  .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  button,.btnlike{font:inherit;font-weight:700;border:0;border-radius:12px;padding:10px 14px;background:var(--g);color:#fff;cursor:pointer;display:inline-block}
+  button.alt,.btnlike.alt{background:#fff;color:var(--gd);border:2px solid var(--g);padding:8px 14px}
+  button.on{background:var(--red);border-color:var(--red);color:#fff}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button:active{transform:scale(.97)}
+  button:focus-visible,.btnlike:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #ffbf3c;outline-offset:2px}
+  .readout{font-size:13px;background:#f1f8ec;border-radius:10px;padding:8px 10px;margin-top:8px;line-height:1.5}
+  .readout b{color:var(--gd)}
+  .status{font-size:13px;color:#6a4a00;background:#fff4d9;border-radius:10px;padding:8px 10px;margin-top:8px;display:none}
+  .chk{display:flex;gap:8px;align-items:center;font-weight:600;font-size:13px;margin-top:8px}
+  .chk input{width:auto}
+  .help{font-size:13px;line-height:1.55}
+  .help code{background:#eef6e8;padding:1px 5px;border-radius:5px}
+  .full{grid-column:1/-1}
+  .fine{font-size:12px;color:#5b6f61;margin-top:6px}
+  @media(max-width:760px){.app{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>CropMagix Doctor Plant</h1>
+  <p>Give any real plant a talking face. Works with a photo of a plant in a pot, in soil or in a field. The mouth follows the voice and the mood follows the plant's health.</p>
+</header>
+
+<div class="app">
+  <div class="card stage">
+    <span class="badge" id="badge">idle</span>
+    <div id="photoWrap">
+      <div id="empty">
+        <b>Show me any plant</b>
+        Pot, soil or open field: it does not matter.<br>
+        Take or choose a photo, drop one here, or paste with Ctrl+V.<br>
+        <span class="fine">The photo is processed in your browser and is not uploaded.</span>
+      </div>
+      <canvas id="photoCanvas" aria-label="Plant photo with talking face. Tap to move the face."></canvas>
+      <video id="cam" playsinline muted></video>
+    </div>
+    <div id="caption">Add a plant photo to begin.</div>
+  </div>
+
+  <div>
+    <div class="card" style="margin-bottom:16px">
+      <h3>1. Plant photo</h3>
+      <div class="row" style="margin-top:0">
+        <label class="btnlike" id="lblShot" tabindex="0" style="margin:0">Take photo<input id="fileShot" type="file" accept="image/*" capture="environment" hidden></label>
+        <label class="btnlike alt" id="lblPick" tabindex="0" style="margin:0">Choose photo<input id="filePick" type="file" accept="image/*" hidden></label>
+        <button id="btnCam" class="alt" type="button">Use webcam</button>
+        <button id="btnSample" class="alt" type="button">Sample plant</button>
+      </div>
+      <div class="row" id="camRow" style="display:none">
+        <button id="btnCapture" type="button">Capture</button>
+        <button id="btnCamCancel" class="alt" type="button">Cancel</button>
+      </div>
+      <label for="faceSize">Face size</label>
+      <input type="range" id="faceSize" min="50" max="180" step="1" value="100">
+      <label class="chk"><input type="checkbox" id="chkDamage" checked> Show damaged areas (red)</label>
+      <label class="chk"><input type="checkbox" id="chkAuto"> Set health from the photo colours (rough guess)</label>
+      <div class="row">
+        <button id="btnAutoPlace" class="alt" type="button" disabled>Auto-place face</button>
+        <button id="btnSave" class="alt" type="button" disabled>Save picture</button>
+      </div>
+      <div class="readout" id="photoStats">No photo yet.</div>
+      <div class="fine">Tap or drag on the photo to move the face. Damage % is a rough colour estimate, not a diagnosis: use the health slider.</div>
+    </div>
+
+    <div class="card">
+      <h3>2. Pick the plant's health</h3>
+      <input type="range" id="sev" min="0" max="4" step="1" value="0" aria-label="Plant health level">
+      <div class="readout" id="moodOut"></div>
+
+      <label for="lang">3. Language and script</label>
+      <select id="lang">
+        <option value="en">English</option>
+        <option value="hi">Hindi (sample text)</option>
+        <option value="te">Telugu (sample text)</option>
+      </select>
+      <textarea id="script" aria-label="What the plant says"></textarea>
+      <div class="status" id="status" role="status"></div>
+
+      <div class="row">
+        <button id="btnSpeak" type="button">Speak</button>
+        <button id="btnStop" class="alt" type="button">Stop</button>
+        <button id="btnListen" class="alt" type="button">Listen (mic)</button>
+        <button id="btnThink" class="alt" type="button">Thinking</button>
+        <button id="btnCheer" class="alt" type="button">Recovered!</button>
+      </div>
+      <label for="file">Or load any audio file (like a Bulbul reply): the mouth follows its loudness</label>
+      <input type="file" id="file" accept="audio/*">
+      <div class="row"><button id="btnPlay" class="alt" type="button">Play file</button></div>
+    </div>
+  </div>
+
+  <div class="card full">
+    <h3>Check many photos (testing)</h3>
+    <div class="fine" style="margin:0 0 8px">Pick 10 to 20 photos of real plants: pot, soil, field, healthy and sick, daylight and shade. For each one, say whether the face went on the plant and whether the red damage looks right. Nothing is uploaded.</div>
+    <label class="btnlike alt" id="lblBatch" tabindex="0" style="margin:0">Choose photos<input id="batchInput" type="file" accept="image/*" multiple hidden></label>
+    <button id="btnCsv" class="alt" type="button" disabled>Download results (CSV)</button>
+    <div class="readout" id="batchSummary" style="display:none"></div>
+    <div id="batchGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:10px"></div>
+  </div>
+
+  <div class="card full help">
+    <h3>How it works</h3>
+    <b>Finding the plant:</b> (1) the photo is shrunk to 1024 px; (2) green pixels are found by colour (hue, saturation, brightness); (3) the largest green shapes are kept as the plant; (4) brown, yellow or very dark pixels are marked as damage. If the background is brown soil (which looks like a lesion), only patches fully <i>inside</i> the green count; on a plain background, brown patches next to the plant count too, and dark pixels count only when the plant surrounds them, so shadows are ignored; (5) the biggest healthy circle is found with a distance map and the face is placed there, away from lesions; (6) the three biggest damaged patches become the red hotspots; (7) each sentence the plant says makes it look at one hotspot. The photo is frozen, so nothing needs tracking and the face cannot slide off the plant.<br>
+    <b>Voice:</b> audio goes through a Web Audio <code>AnalyserNode</code>; its loudness (about 60 times a second) opens the mouth. The browser's built-in voice cannot be analysed, so for that voice the mouth follows word-boundary events. The health level also sets the voice pace and pitch (the same table planned for Bulbul).<br>
+    <b>Buttons:</b> <b>Listen</b> uses your microphone (wide eyes and a ring that grows with your voice). <b>Thinking</b> shows the wait while the AI works. <b>Recovered!</b> shows a happy face with confetti.<br>
+    <b>Limits:</b> damage % is a colour estimate. Large dead patches at the leaf edge, white mildew, brownish healthy edges, and very dark or very bright photos can be missed or mis-counted. Always confirm with an expert.<br>
+    <b>In the real app:</b> the audio comes from Sarvam Bulbul, the health level from the diagnosis, and Haiku's hotspots can be combined with these colour hotspots. Nothing else changes.
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
+
+  // ---- mood table: same numbers planned for Bulbul pace/pitch ----
+  var LEVELS = [
+    { name: 'Healthy',  s: 0.0,  pace: 1.10, pitch: 0.10,  face: 'cheerful, bright' },
+    { name: 'Mild',     s: 0.25, pace: 1.05, pitch: 0.05,  face: 'fine, slightly unsure' },
+    { name: 'Moderate', s: 0.5,  pace: 1.00, pitch: 0.00,  face: 'worried' },
+    { name: 'Severe',   s: 0.75, pace: 0.90, pitch: -0.15, face: 'weak, tired' },
+    { name: 'Critical', s: 1.0,  pace: 0.80, pitch: -0.25, face: 'very tired, pale' }
+  ];
+  var SCRIPTS = {
+    en: { lang: 'en-IN', text: 'My leaves are turning yellow and spotty. Please help me. Spray neem oil today, in the evening.' },
+    hi: { lang: 'hi-IN', text: 'मेरी पत्तियाँ पीली पड़ रही हैं। कृपया मेरी मदद कीजिए। आज शाम को नीम का तेल छिड़कें।' },
+    te: { lang: 'te-IN', text: 'నా ఆకులు పసుపు రంగులోకి మారుతున్నాయి. దయచేసి నాకు సహాయం చేయండి. ఈ రోజు సాయంత్రం వేప నూనె పిచికారీ చేయండి.' }
+  };
+
+  // ---- state ----
+  var st = {
+    sevShown: 0, mouth: 0,
+    blinkAt: 2, blinkT: -1,
+    mode: 'idle',                // idle | listening | thinking | speaking | cheering
+    cheerUntil: 0, thinkUntil: 0,
+    activeSpot: -1,
+    lastBoundary: 0, seenBoundary: false, ttsSpeaking: false,
+    analyser: null, buf: null, analyserKind: null, level: 0,
+    pointer: null
+  };
+  var audioCtx = null, micStream = null, fileAudio = null, fileUrl = null, camStream = null;
+  var confetti = [];
+
+  var el = {};
+  ['badge','caption','sev','moodOut','lang','script','status','btnSpeak','btnStop','btnListen','btnThink','btnCheer','file','btnPlay',
+   'photoWrap','photoCanvas','cam','empty','fileShot','filePick','lblShot','lblPick','btnCam','btnSample','camRow','btnCapture','btnCamCancel',
+   'faceSize','chkDamage','chkAuto','btnAutoPlace','btnSave','photoStats']
+    .forEach(function (id) { el[id] = $(id); });
+
+  function setMode(m) { st.mode = m; el.badge.textContent = m; }
+  function showStatus(msg) { el.status.style.display = msg ? 'block' : 'none'; el.status.textContent = msg || ''; }
+  function curLevel() { return LEVELS[parseInt(el.sev.value, 10)]; }
+  function nSpots() { return PH.hs.length; }
+
+  function updateMoodText() {
+    var L = curLevel();
+    el.moodOut.innerHTML = '<b>' + L.name + '</b>: ' + L.face + '<br>Bulbul voice settings for this level: pace <b>' + L.pace.toFixed(2) + '</b>, pitch <b>' + (L.pitch >= 0 ? '+' : '') + L.pitch.toFixed(2) + '</b>';
+  }
+
+  // mouth outline (centre 160,207 in its own units); drawn scaled onto the photo with Path2D
+  function mouthPath(open, smile) {
+    var cx = 160, my = 207, half = 24 - open * 3;
+    var cornerY = my - smile * 9;
+    var upMid = my + smile * 3 - open * 2;
+    var lowMid = upMid + open * 26 + (smile > 0 ? smile * 5 : 0);
+    var upCtrl = 2 * upMid - cornerY;
+    var lowCtrl = 2 * lowMid - cornerY;
+    return 'M' + (cx - half) + ' ' + cornerY + ' Q' + cx + ' ' + upCtrl + ' ' + (cx + half) + ' ' + cornerY +
+           ' Q' + cx + ' ' + lowCtrl + ' ' + (cx - half) + ' ' + cornerY + ' Z';
+  }
+
+  // =====================================================================
+  //  find the plant, damage and hotspots; place the face
+  // =====================================================================
+  var PH = {
+    ready: false, base: null, W: 0, H: 0, ctx: null,
+    overlay: null, hs: [], face: { x: 0, y: 0 }, autoU: 40, u: 40, mult: 1,
+    skin: '#3d8f4f', look: { x: 0, y: 0 }, found: false, dragging: false,
+    stats: null, autoSetHealth: false, soilMode: false
+  };
+  var ANALYSIS_EDGE = 224;
+
+  function rgb2hsv(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, h = 0;
+    if (d > 0) {
+      if (mx === r) h = ((g - b) / d) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4;
+      h *= 60; if (h < 0) h += 360;
+    }
+    return [h, mx === 0 ? 0 : d / mx, mx];
+  }
+  function components(mask, w, h) {
+    var seen = new Uint8Array(w * h), q = new Int32Array(w * h), comps = [];
+    for (var i = 0; i < w * h; i++) {
+      if (!mask[i] || seen[i]) continue;
+      var head = 0, tail = 0, idx = [], sx = 0, sy = 0;
+      q[tail++] = i; seen[i] = 1;
+      while (head < tail) {
+        var p = q[head++], x = p % w, y = (p / w) | 0;
+        idx.push(p); sx += x; sy += y;
+        if (x > 0 && mask[p - 1] && !seen[p - 1]) { seen[p - 1] = 1; q[tail++] = p - 1; }
+        if (x < w - 1 && mask[p + 1] && !seen[p + 1]) { seen[p + 1] = 1; q[tail++] = p + 1; }
+        if (y > 0 && mask[p - w] && !seen[p - w]) { seen[p - w] = 1; q[tail++] = p - w; }
+        if (y < h - 1 && mask[p + w] && !seen[p + w]) { seen[p + w] = 1; q[tail++] = p + w; }
+      }
+      comps.push({ area: idx.length, cx: sx / idx.length, cy: sy / idx.length, idx: idx });
+    }
+    return comps;
+  }
+  function distanceMap(mask, w, h) {
+    var d = new Float32Array(w * h), INF = 1e6, i, x, y, v;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = y * w + x;
+      d[i] = (mask[i] && x > 0 && y > 0 && x < w - 1 && y < h - 1) ? INF : 0;
+    }
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = y * w + x; if (!d[i]) continue; v = d[i];
+      if (x > 0) v = Math.min(v, d[i - 1] + 1);
+      if (y > 0) v = Math.min(v, d[i - w] + 1);
+      if (x > 0 && y > 0) v = Math.min(v, d[i - w - 1] + 1.414);
+      if (x < w - 1 && y > 0) v = Math.min(v, d[i - w + 1] + 1.414);
+      d[i] = v;
+    }
+    for (y = h - 1; y >= 0; y--) for (x = w - 1; x >= 0; x--) {
+      i = y * w + x; if (!d[i]) continue; v = d[i];
+      if (x < w - 1) v = Math.min(v, d[i + 1] + 1);
+      if (y < h - 1) v = Math.min(v, d[i + w] + 1);
+      if (x < w - 1 && y < h - 1) v = Math.min(v, d[i + w + 1] + 1.414);
+      if (x > 0 && y < h - 1) v = Math.min(v, d[i + w - 1] + 1.414);
+      d[i] = v;
+    }
+    return d;
+  }
+
+  function srcSize(s) { return { w: s.naturalWidth || s.videoWidth || s.width, h: s.naturalHeight || s.videoHeight || s.height }; }
+
+  function loadSource(src) {
+    var sz = srcSize(src);
+    if (!sz.w || !sz.h) { showStatus('That picture is empty.'); return; }
+    var sc = Math.min(1, 1024 / Math.max(sz.w, sz.h));
+    PH.W = Math.max(2, Math.round(sz.w * sc)); PH.H = Math.max(2, Math.round(sz.h * sc));
+    PH.base = document.createElement('canvas'); PH.base.width = PH.W; PH.base.height = PH.H;
+    PH.base.getContext('2d').drawImage(src, 0, 0, PH.W, PH.H);
+    el.photoCanvas.width = PH.W; el.photoCanvas.height = PH.H;
+    PH.ctx = el.photoCanvas.getContext('2d');
+    st.activeSpot = -1;
+    analyzePhoto();
+    PH.ready = true;
+    el.empty.style.display = 'none'; el.cam.style.display = 'none'; el.photoCanvas.style.display = 'block';
+    el.btnAutoPlace.disabled = false; el.btnSave.disabled = false;
+    el.caption.textContent = 'Press Speak. Tap the photo to move my face.';
+    showStatus('');
+  }
+
+  function analyzePhoto() {
+    var sc = ANALYSIS_EDGE / Math.max(PH.W, PH.H);
+    var aw = Math.max(8, Math.round(PH.W * sc)), ah = Math.max(8, Math.round(PH.H * sc));
+    var tmp = document.createElement('canvas'); tmp.width = aw; tmp.height = ah;
+    var tctx = tmp.getContext('2d'); tctx.drawImage(PH.base, 0, 0, aw, ah);
+    var data = tctx.getImageData(0, 0, aw, ah).data, n = aw * ah, i, x, y, last;
+
+    var green = new Uint8Array(n), tissue = new Uint8Array(n);
+    for (i = 0; i < n; i++) {
+      var hsv = rgb2hsv(data[i * 4], data[i * 4 + 1], data[i * 4 + 2]), h = hsv[0], s = hsv[1], v = hsv[2];
+      if (h >= 62 && h <= 172 && s >= 0.2 && v >= 0.16) green[i] = 1;
+      else if (h >= 8 && h < 62 && s >= 0.25 && v >= 0.12) tissue[i] = 1;   // brown / yellow
+      else if (v < 0.2) tissue[i] = 2;                                      // very dark: dead tissue OR a shadow
+    }
+    var comps = components(green, aw, ah).sort(function (a, b) { return b.area - a.area; });
+    var plant = new Uint8Array(n), greenCount = 0;
+    if (comps.length) {
+      var minKeep = Math.max(20, comps[0].area * 0.12);
+      comps.forEach(function (c) { if (c.area >= minKeep) c.idx.forEach(function (p) { plant[p] = 1; greenCount++; }); });
+    }
+    PH.found = greenCount >= n * 0.012;
+
+    var R = Math.max(6, Math.round(0.1 * Math.max(aw, ah))), INF = 1e6;
+    var dl = new Float32Array(n), dr = new Float32Array(n), du = new Float32Array(n), dd = new Float32Array(n);
+    for (y = 0; y < ah; y++) {
+      last = -INF; for (x = 0; x < aw; x++) { if (plant[y * aw + x]) last = x; dl[y * aw + x] = x - last; }
+      last = INF; for (x = aw - 1; x >= 0; x--) { if (plant[y * aw + x]) last = x; dr[y * aw + x] = last - x; }
+    }
+    for (x = 0; x < aw; x++) {
+      last = -INF; for (y = 0; y < ah; y++) { if (plant[y * aw + x]) last = y; du[y * aw + x] = y - last; }
+      last = INF; for (y = ah - 1; y >= 0; y--) { if (plant[y * aw + x]) last = y; dd[y * aw + x] = last - y; }
+    }
+    // background = non-plant pixels connected to the photo border (soil, table, sky...)
+    var bg = new Uint8Array(n), bq = new Int32Array(n), bh = 0, bt = 0;
+    function seed(p) { if (!plant[p] && !bg[p]) { bg[p] = 1; bq[bt++] = p; } }
+    for (x = 0; x < aw; x++) { seed(x); seed((ah - 1) * aw + x); }
+    for (y = 0; y < ah; y++) { seed(y * aw); seed(y * aw + aw - 1); }
+    while (bh < bt) {
+      var bp = bq[bh++], bx0 = bp % aw, by0 = (bp / aw) | 0;
+      if (bx0 > 0) seed(bp - 1); if (bx0 < aw - 1) seed(bp + 1); if (by0 > 0) seed(bp - aw); if (by0 < ah - 1) seed(bp + aw);
+    }
+    var bgTotal = 0, bgTissue = 0;
+    for (i = 0; i < n; i++) if (bg[i]) { bgTotal++; if (tissue[i]) bgTissue++; }
+    // soil mode: the background itself looks like lesion colour (brown), so only holes INSIDE the plant count
+    PH.soilMode = bgTotal > 0 && bgTissue / bgTotal > 0.35;
+    var near = Math.max(3, Math.round(R * 0.5));
+    var lesion = new Uint8Array(n), lesionCount = 0;
+    for (i = 0; i < n; i++) {
+      if (plant[i] || !tissue[i]) continue;
+      if (PH.soilMode) { if (!bg[i]) { lesion[i] = 1; lesionCount++; } }
+      else if (tissue[i] === 1 && Math.min(dl[i], dr[i], du[i], dd[i]) <= near) { lesion[i] = 1; lesionCount++; }
+      else if (tissue[i] === 2) {
+        var enc = (dl[i] <= R ? 1 : 0) + (dr[i] <= R ? 1 : 0) + (du[i] <= R ? 1 : 0) + (dd[i] <= R ? 1 : 0);
+        if (enc >= 3) { lesion[i] = 1; lesionCount++; }
+      }
+    }
+    var lc = components(lesion, aw, ah).filter(function (c) { return c.area >= 6; }).sort(function (a, b) { return b.area - a.area; }).slice(0, 3);
+    var k = PH.W / aw;
+    PH.hs = lc.map(function (c) { return { x: c.cx * k, y: c.cy * k, r: Math.max(14, Math.sqrt(c.area / Math.PI) * 1.5 * k + 8) }; });
+
+    var ov = document.createElement('canvas'); ov.width = aw; ov.height = ah;
+    var octx = ov.getContext('2d'), oi = octx.createImageData(aw, ah);
+    for (i = 0; i < n; i++) if (lesion[i]) { oi.data[i * 4] = 255; oi.data[i * 4 + 1] = 40; oi.data[i * 4 + 2] = 40; oi.data[i * 4 + 3] = 255; }
+    octx.putImageData(oi, 0, 0); PH.overlay = ov;
+
+    var healthy = new Uint8Array(n), cxs = 0, cys = 0, pc = 0;
+    for (i = 0; i < n; i++) if (plant[i]) { healthy[i] = lesion[i] ? 0 : 1; cxs += i % aw; cys += (i / aw) | 0; pc++; }
+    var best = -1e9, bx = aw / 2, by = ah / 2, bd = 0;
+    if (pc) {
+      var mcx = cxs / pc, mcy = cys / pc, dm = distanceMap(healthy, aw, ah);
+      for (i = 0; i < n; i++) {
+        if (dm[i] <= 1) continue;
+        var px = i % aw, py = (i / aw) | 0, score = dm[i] - 0.05 * Math.hypot(px - mcx, py - mcy);
+        if (score > best) { best = score; bx = px; by = py; bd = dm[i]; }
+      }
+    }
+    PH.autoU = clamp(bd * k * 0.9, 0.09 * PH.W, 0.2 * PH.W);
+    if (!PH.found || !bd) PH.autoU = 0.14 * PH.W;
+    PH.face.x = (PH.found ? bx : aw / 2) * k; PH.face.y = (PH.found ? by : ah / 2) * k;
+    PH.mult = 1; el.faceSize.value = 100; updateU();
+    sampleSkin();
+
+    var total = greenCount + lesionCount, dmgPct = total ? 100 * lesionCount / total : 0;
+    PH.stats = { greenPct: 100 * greenCount / n, dmgPct: dmgPct, spots: PH.hs.length };
+    var lvl = dmgPct < 2 ? 0 : dmgPct < 8 ? 1 : dmgPct < 20 ? 2 : dmgPct < 40 ? 3 : 4;
+    var msg;
+    if (!PH.found) {
+      msg = '<b>I could not find much green.</b> Drag the face onto the plant, or retake the photo closer, in daylight.';
+    } else {
+      msg = 'Plant found: <b>' + PH.stats.greenPct.toFixed(0) + '%</b> of the photo<br>Damaged area: about <b>' + dmgPct.toFixed(0) + '%</b> of the plant (rough colour estimate)<br>Hotspots found: <b>' + PH.hs.length + '</b>';
+      if (PH.autoSetHealth) { el.sev.value = lvl; updateMoodText(); msg += '<br>Health set to <b>' + LEVELS[lvl].name + '</b> from the photo'; }
+    }
+    el.photoStats.innerHTML = msg;
+  }
+
+  function updateU() { PH.u = PH.autoU * PH.mult; }
+  function sampleSkin() {
+    try {
+      var r = Math.max(4, Math.round(PH.u * 0.6)), x0 = clamp(Math.round(PH.face.x - r), 0, PH.W - 2), y0 = clamp(Math.round(PH.face.y - r), 0, PH.H - 2);
+      var w = Math.min(2 * r, PH.W - x0), h = Math.min(2 * r, PH.H - y0);
+      var d = PH.base.getContext('2d').getImageData(x0, y0, w, h).data, R = 0, G = 0, B = 0, c = 0;
+      for (var i = 0; i < d.length; i += 4) { R += d[i]; G += d[i + 1]; B += d[i + 2]; c++; }
+      if (c) PH.skin = 'rgb(' + Math.round(R / c) + ',' + Math.round(G / c) + ',' + Math.round(B / c) + ')';
+    } catch (e) { PH.skin = '#3d8f4f'; }
+  }
+
+  // =====================================================================
+  //  drawing the photo, rings and the talking face
+  // =====================================================================
+  function drawPhoto(a) {
+    var ctx = PH.ctx, u = PH.u, s = a.s, i;
+    ctx.clearRect(0, 0, PH.W, PH.H);
+    ctx.drawImage(PH.base, 0, 0);
+    if (el.chkDamage.checked && PH.overlay) { ctx.globalAlpha = 0.5; ctx.drawImage(PH.overlay, 0, 0, PH.W, PH.H); ctx.globalAlpha = 1; }
+
+    var speakingNow = st.ttsSpeaking || (st.analyserKind === 'file' && fileAudio && !fileAudio.paused);
+    for (i = 0; i < PH.hs.length; i++) {
+      var h = PH.hs[i], on = (i === st.activeSpot) && speakingNow;
+      ctx.save();
+      ctx.lineWidth = on ? Math.max(4, u * 0.1) : Math.max(2, u * 0.05);
+      ctx.strokeStyle = on ? 'rgba(255,60,60,' + (0.75 + 0.25 * Math.sin(a.t * 10)) + ')' : 'rgba(255,255,255,.6)';
+      if (on) { ctx.shadowColor = '#ff3b3b'; ctx.shadowBlur = 14; }
+      ctx.beginPath(); ctx.arc(h.x, h.y, h.r * (on ? 1 + 0.06 * Math.sin(a.t * 10) : 1), 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+
+    // eyes look at the active hotspot, else follow the pointer
+    var tx = 0, ty = 0, hs = PH.hs[st.activeSpot];
+    if (st.mode === 'thinking') { tx = 0.7; ty = -0.5; }
+    else if (st.mode === 'listening') { tx = 0; ty = 0; }
+    else if (hs && speakingNow) { var dx = hs.x - PH.face.x, dy = hs.y - PH.face.y, dl = Math.hypot(dx, dy) || 1; tx = dx / dl; ty = dy / dl; }
+    else if (st.pointer) { tx = st.pointer.x / 7; ty = st.pointer.y / 6; }
+    PH.look.x += (tx - PH.look.x) * 0.15; PH.look.y += (ty - PH.look.y) * 0.15;
+
+    var fx = PH.face.x, fy = PH.face.y, eyeDX = 0.42 * u, eyeY = -0.35 * u, rx = 0.255 * u, ry = 0.3 * u;
+
+    // listening ring grows with the microphone level
+    if (st.mode === 'listening') {
+      ctx.save(); ctx.strokeStyle = 'rgba(93,210,138,' + (0.5 + clamp(st.level * 4, 0, 0.5)) + ')'; ctx.lineWidth = Math.max(3, u * 0.08);
+      ctx.beginPath(); ctx.arc(fx, fy, u * (1.25 + clamp(st.level * 3, 0, 0.5)), 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    }
+
+    ctx.save();
+    ctx.translate(fx, fy + a.bounce * u * 0.01);
+    ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = u * 0.14;
+    [-1, 1].forEach(function (side) {
+      var ex = side * eyeDX;
+      ctx.beginPath(); ctx.ellipse(ex, eyeY, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.shadowColor = 'transparent';
+      ctx.lineWidth = u * 0.035; ctx.strokeStyle = 'rgba(20,30,20,.65)'; ctx.stroke();
+      ctx.save(); ctx.beginPath(); ctx.ellipse(ex, eyeY, rx, ry, 0, 0, Math.PI * 2); ctx.clip();
+      var pr = (st.mode === 'listening' ? 0.15 : 0.12) * u;
+      var px = ex + PH.look.x * 0.11 * u, py = eyeY + 0.03 * u + PH.look.y * 0.12 * u;
+      ctx.fillStyle = '#1d2a22'; ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(px - pr * 0.35, py - pr * 0.4, pr * 0.3, 0, Math.PI * 2); ctx.fill();
+      if (a.lid > 0.01) { ctx.fillStyle = PH.skin; ctx.fillRect(ex - rx - 2, eyeY - ry - 2, 2 * rx + 4, 2 * ry * a.lid + 2); }
+      ctx.restore();
+      ctx.shadowColor = 'rgba(0,0,0,.5)';
+      ctx.save(); ctx.translate(ex, eyeY - 0.45 * u + a.browLift * u * 0.012);
+      ctx.rotate((side < 0 ? -a.brow : a.brow) * Math.PI / 180);
+      ctx.lineCap = 'round'; ctx.lineWidth = u * 0.085; ctx.strokeStyle = '#1d2a22';
+      ctx.beginPath(); ctx.moveTo(-0.3 * u, 0); ctx.lineTo(0.3 * u, 0); ctx.stroke(); ctx.restore();
+    });
+    var k = u / 66.7;
+    ctx.save(); ctx.translate(0, 0.35 * u); ctx.scale(k, k); ctx.translate(-160, -207);
+    var mp = new Path2D(mouthPath(st.mouth, a.smile));
+    ctx.fillStyle = '#5a1f2b'; ctx.fill(mp); ctx.lineJoin = 'round'; ctx.lineWidth = 3.5; ctx.strokeStyle = '#3b1018'; ctx.stroke(mp);
+    ctx.restore();
+    if (s > 0.55) {
+      var off = (a.t * 0.5 % 1) * 0.25 * u;
+      ctx.fillStyle = 'rgba(124,200,255,.9)'; ctx.beginPath();
+      ctx.moveTo(1.0 * u, -0.7 * u + off); ctx.quadraticCurveTo(0.88 * u, -0.45 * u + off, 1.0 * u, -0.4 * u + off); ctx.quadraticCurveTo(1.12 * u, -0.45 * u + off, 1.0 * u, -0.7 * u + off); ctx.fill();
+    }
+    ctx.restore();
+
+    // confetti for "Recovered!"
+    for (var p = confetti.length - 1; p >= 0; p--) {
+      var q = confetti[p];
+      q.vy += 0.35; q.x += q.vx; q.y += q.vy; q.r += q.vr;
+      ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.r * Math.PI / 180); ctx.fillStyle = q.c; ctx.fillRect(-q.w / 2, -q.w / 4, q.w, q.w / 2); ctx.restore();
+      if (q.y > PH.H + 20) confetti.splice(p, 1);
+    }
+  }
+
+  // =====================================================================
+  //  photo input
+  // =====================================================================
+  function loadFile(file) {
+    if (!file) return;
+    if (!/^image\//.test(file.type) && !/\.(jpe?g|png|webp|gif|bmp)$/i.test(file.name)) { showStatus('That is not a picture file. Use JPG, PNG or WebP.'); return; }
+    if (file.size > 30 * 1024 * 1024) { showStatus('That picture is too large (over 30 MB).'); return; }
+    var fail = function () { showStatus('Could not read this picture. Try a JPG or PNG (some phone formats such as HEIC are not supported by browsers).'); };
+    if (window.createImageBitmap) {
+      createImageBitmap(file, { imageOrientation: 'from-image' }).then(loadSource).catch(function () { viaImage(file, fail); });
+    } else viaImage(file, fail);
+  }
+  function viaImage(file, fail) {
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function () { loadSource(img); URL.revokeObjectURL(url); };
+    img.onerror = function () { URL.revokeObjectURL(url); fail(); };
+    img.src = url;
+  }
+  function openCam() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showStatus('The webcam is not available in this browser or page. Use Take photo or Choose photo.'); return; }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } }).then(function (s) {
+      camStream = s; el.cam.srcObject = s; el.cam.play();
+      el.empty.style.display = 'none'; el.photoCanvas.style.display = 'none'; el.cam.style.display = 'block'; el.camRow.style.display = 'flex'; showStatus('');
+    }).catch(function (e) { showStatus('Could not open the camera: ' + e.message); });
+  }
+  function closeCam() {
+    if (camStream) { camStream.getTracks().forEach(function (t) { t.stop(); }); camStream = null; }
+    el.cam.style.display = 'none'; el.camRow.style.display = 'none';
+    if (PH.ready) el.photoCanvas.style.display = 'block'; else el.empty.style.display = 'block';
+  }
+  function captureCam() {
+    if (!el.cam.videoWidth) { showStatus('The camera is not ready yet.'); return; }
+    var c = document.createElement('canvas'); c.width = el.cam.videoWidth; c.height = el.cam.videoHeight;
+    c.getContext('2d').drawImage(el.cam, 0, 0); closeCam(); loadSource(c);
+  }
+
+  // a drawn sample plant on soil so the feature can be tried without any photo
+  function samplePlant() {
+    var c = document.createElement('canvas'); c.width = 720; c.height = 540; var g = c.getContext('2d');
+    var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    var grd = g.createLinearGradient(0, 0, 0, 540); grd.addColorStop(0, '#8a6a46'); grd.addColorStop(1, '#5d4529'); g.fillStyle = grd; g.fillRect(0, 0, 720, 540);
+    for (var i = 0; i < 1800; i++) { g.fillStyle = 'rgba(' + (60 + rnd() * 70) + ',' + (40 + rnd() * 50) + ',' + (20 + rnd() * 30) + ',.5)'; g.fillRect(rnd() * 720, rnd() * 540, 2 + rnd() * 5, 2 + rnd() * 4); }
+    g.strokeStyle = '#2f7a3c'; g.lineWidth = 12; g.lineCap = 'round'; g.beginPath(); g.moveTo(360, 540); g.lineTo(360, 250); g.stroke();
+    var leaves = [[360, 300, -1.9, 170, 78], [360, 330, -0.9, 190, 82], [360, 300, 0.9, 190, 84], [360, 330, 1.9, 175, 78], [360, 255, 0, 150, 70]];
+    var lesions = [[-1.9, 100, 0], [-1.9, 60, 18], [-0.9, 110, -14], [0.9, 90, 12], [0.9, 130, -10], [1.9, 85, 4], [0, 60, 8]];
+    leaves.forEach(function (L) {
+      g.save(); g.translate(L[0], L[1]); g.rotate(L[2] - Math.PI / 2);
+      var lg = g.createLinearGradient(0, 0, L[3], 0); lg.addColorStop(0, '#2f8f45'); lg.addColorStop(1, '#4cb35c');
+      g.fillStyle = lg; g.beginPath(); g.ellipse(L[3] / 2, 0, L[3] / 2, L[4] / 2, 0, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#2a7a3a'; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 0); g.lineTo(L[3], 0); g.stroke();
+      lesions.forEach(function (ls) {
+        if (Math.abs(ls[0] - L[2]) < 0.01) {
+          g.fillStyle = 'rgba(201,194,74,.8)'; g.beginPath(); g.ellipse(ls[1], ls[2], 24, 18, 0, 0, Math.PI * 2); g.fill();
+          g.fillStyle = '#6b3f1d'; g.beginPath(); g.ellipse(ls[1], ls[2], 15, 11, 0, 0, Math.PI * 2); g.fill();
+        }
+      });
+      g.restore();
+    });
+    loadSource(c);
+  }
+
+  // ---- move the face with tap or drag ----
+  function canvasPoint(e) {
+    var r = el.photoCanvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * (PH.W / r.width), y: (e.clientY - r.top) * (PH.H / r.height) };
+  }
+  el.photoCanvas.addEventListener('pointerdown', function (e) {
+    if (!PH.ready) return;
+    PH.dragging = true; el.photoCanvas.classList.add('drag');
+    try { el.photoCanvas.setPointerCapture(e.pointerId); } catch (x) {}
+    var p = canvasPoint(e); PH.face.x = clamp(p.x, 0, PH.W); PH.face.y = clamp(p.y, 0, PH.H);
+  });
+  el.photoCanvas.addEventListener('pointermove', function (e) {
+    if (!PH.dragging) return;
+    var p = canvasPoint(e); PH.face.x = clamp(p.x, 0, PH.W); PH.face.y = clamp(p.y, 0, PH.H);
+  });
+  function endDrag() { if (PH.dragging) { PH.dragging = false; el.photoCanvas.classList.remove('drag'); sampleSkin(); } }
+  el.photoCanvas.addEventListener('pointerup', endDrag);
+  el.photoCanvas.addEventListener('pointercancel', endDrag);
+
+  // =====================================================================
+  //  audio, speech, main loop
+  // =====================================================================
+  function ensureCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function readLevel() {
+    if (!st.analyser) return 0;
+    st.analyser.getByteTimeDomainData(st.buf);
+    var sum = 0;
+    for (var i = 0; i < st.buf.length; i++) { var v = (st.buf[i] - 128) / 128; sum += v * v; }
+    return Math.sqrt(sum / st.buf.length);
+  }
+
+  var t0 = performance.now();
+  function frame(now) {
+    var t = (now - t0) / 1000;
+    var L = curLevel();
+    var cheering = now < st.cheerUntil;
+    if (st.mode === 'cheering' && !cheering) setMode('idle');
+    if (st.mode === 'thinking' && now > st.thinkUntil) setMode('idle');
+
+    var sevTarget = cheering ? 0 : L.s;
+    st.sevShown += (sevTarget - st.sevShown) * 0.08;
+    var s = st.sevShown;
+
+    var lvl = readLevel();
+    st.level += (lvl - st.level) * 0.4;
+    var target = 0;
+    if (st.analyser && st.analyserKind === 'file') {
+      target = clamp((st.level - 0.015) * 7, 0, 1);
+    } else if (st.ttsSpeaking) {
+      var flap = 0.5 + 0.5 * Math.sin(t * 15 + Math.sin(t * 5) * 2);
+      if (st.seenBoundary) {
+        var since = now - st.lastBoundary;
+        target = since < 260 ? (0.35 + 0.55 * flap) * (1 - since / 340) + 0.08 : 0.06;
+      } else {
+        target = 0.15 + 0.6 * flap;
+      }
+    } else if (cheering) {
+      target = 0.35 + 0.1 * Math.sin(t * 6);
+    }
+    st.mouth += (target - st.mouth) * 0.45;
+
+    var smile = cheering ? 1 : clamp(0.95 - s * 1.9, -0.9, 0.95);
+    if (st.mode === 'listening') smile = Math.max(smile, 0) * 0.5;
+
+    var lid = s * 0.42;
+    if (st.mode === 'listening') lid = 0;
+    if (t > st.blinkAt && st.blinkT < 0) st.blinkT = t;
+    var blink = 0;
+    if (st.blinkT >= 0) {
+      var bt = (t - st.blinkT) / 0.16;
+      blink = bt < 1 ? Math.sin(bt * Math.PI) : 0;
+      if (bt >= 1) { st.blinkT = -1; st.blinkAt = t + 1.8 + Math.random() * 3.2; }
+    }
+    var lidFrac = clamp(Math.max(lid, blink), 0, 1);
+
+    // worried tilt only (inner ends up); never tilt the other way, that looks angry
+    var w = clamp((s - 0.2) * 26, 0, 22);
+    var browLift = (st.mode === 'listening' || cheering) ? -7 : 0;
+    if (st.mode === 'listening' || cheering) w = 0;
+    var bounce = cheering ? Math.abs(Math.sin(t * 7)) * -12 : 0;
+
+    if (PH.ready) drawPhoto({ t: t, s: s, smile: smile, lid: lidFrac, brow: w, browLift: browLift, bounce: bounce });
+    if (st.analyserKind === 'file' && fileAudio && !fileAudio.paused && nSpots()) st.activeSpot = Math.floor(fileAudio.currentTime / 2.2) % nSpots();
+    requestAnimationFrame(frame);
+  }
+
+  // ---- speech (browser voice) ----
+  function findVoice(langCode) {
+    var vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+    var pre = langCode.slice(0, 2);
+    for (var i = 0; i < vs.length; i++) if (vs[i].lang.replace('_', '-').toLowerCase() === langCode.toLowerCase()) return vs[i];
+    for (var j = 0; j < vs.length; j++) if (vs[j].lang.toLowerCase().indexOf(pre) === 0) return vs[j];
+    return null;
+  }
+  function splitSentences(text) {
+    return text.split(/(?<=[.!?\u0964])\s+/).map(function (x) { return x.trim(); }).filter(Boolean);
+  }
+  function needPhoto() { if (PH.ready) return false; showStatus('Add a plant photo first (Take photo, Choose photo, Use webcam or Sample plant).'); return true; }
+  function speak() {
+    stopAll();
+    if (needPhoto()) return;
+    if (!window.speechSynthesis) { showStatus('This browser has no built-in voice. Use the audio-file option instead.'); return; }
+    var sc = SCRIPTS[el.lang.value], L = curLevel();
+    var sentences = splitSentences(el.script.value);
+    if (!sentences.length) return;
+    var voice = findVoice(sc.lang);
+    showStatus(voice ? '' : 'No ' + sc.lang + ' voice installed in this browser, so the sound may be silent or in another language. The mouth animation still runs. Real Bulbul voices fix this.');
+    setMode('speaking');
+    st.ttsSpeaking = true; st.seenBoundary = false;
+    sentences.forEach(function (sen, idx) {
+      var u = new SpeechSynthesisUtterance(sen);
+      u.lang = sc.lang; if (voice) u.voice = voice;
+      u.rate = clamp(L.pace, 0.5, 2); u.pitch = clamp(1 + L.pitch * 2, 0, 2);
+      u.onstart = function () { var n = nSpots(); st.activeSpot = n ? idx % n : -1; el.caption.textContent = sen; };
+      u.onboundary = function () { st.seenBoundary = true; st.lastBoundary = performance.now(); };
+      u.onend = function () { if (idx === sentences.length - 1) finishSpeaking(); };
+      u.onerror = function () { if (idx === sentences.length - 1) finishSpeaking(); };
+      speechSynthesis.speak(u);
+    });
+  }
+  function finishSpeaking() { st.ttsSpeaking = false; if (st.mode === 'speaking') setMode('idle'); }
+  function stopAll() {
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    st.ttsSpeaking = false;
+    if (fileAudio) { fileAudio.pause(); }
+    if (st.analyserKind === 'file') { st.analyser = null; st.analyserKind = null; }
+    if (st.mode === 'speaking') setMode('idle');
+    st.activeSpot = -1;
+  }
+
+  function toggleMic() {
+    if (micStream) { micStream.getTracks().forEach(function (tr) { tr.stop(); }); micStream = null; st.analyser = null; st.analyserKind = null; el.btnListen.classList.remove('on'); el.btnListen.textContent = 'Listen (mic)'; setMode('idle'); return; }
+    stopAll();
+    if (needPhoto()) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showStatus('Microphone is not available in this browser or page.'); return; }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      micStream = stream;
+      var ctx = ensureCtx();
+      var src = ctx.createMediaStreamSource(stream);
+      var an = ctx.createAnalyser(); an.fftSize = 1024;
+      src.connect(an);
+      st.analyser = an; st.buf = new Uint8Array(an.fftSize); st.analyserKind = 'mic';
+      el.btnListen.classList.add('on'); el.btnListen.textContent = 'Stop listening';
+      setMode('listening'); showStatus('');
+      el.caption.textContent = 'Listening... speak to the plant.';
+    }).catch(function (e) { showStatus('Could not use the microphone: ' + e.message); });
+  }
+
+  function playFile() {
+    var f = el.file.files && el.file.files[0];
+    if (!f) { showStatus('Choose an audio file first (wav, mp3, ogg...).'); return; }
+    stopAll();
+    if (needPhoto()) return;
+    if (fileUrl) URL.revokeObjectURL(fileUrl);
+    fileUrl = URL.createObjectURL(f);
+    fileAudio = new Audio(fileUrl);
+    var ctx = ensureCtx();
+    var src = ctx.createMediaElementSource(fileAudio);
+    var an = ctx.createAnalyser(); an.fftSize = 1024;
+    src.connect(an); an.connect(ctx.destination);
+    st.analyser = an; st.buf = new Uint8Array(an.fftSize); st.analyserKind = 'file';
+    fileAudio.onended = function () { st.analyser = null; st.analyserKind = null; setMode('idle'); st.activeSpot = -1; };
+    fileAudio.play().then(function () { setMode('speaking'); showStatus(''); el.caption.textContent = f.name; })
+      .catch(function (e) { showStatus('Could not play the file: ' + e.message); });
+  }
+
+  function think() { stopAll(); if (needPhoto()) return; setMode('thinking'); st.thinkUntil = performance.now() + 2600; el.caption.textContent = 'Let me look at your leaf...'; }
+  function cheer() {
+    stopAll(); if (needPhoto()) return;
+    setMode('cheering'); st.cheerUntil = performance.now() + 3200;
+    el.caption.textContent = 'Thank you! I feel so much better!';
+    var colors = ['#ff6b6b', '#ffd166', '#06d6a0', '#4cc9f0', '#b388ff'];
+    for (var i = 0; i < 60; i++) {
+      confetti.push({ x: PH.face.x + (Math.random() - 0.5) * PH.W * 0.4, y: PH.face.y - PH.u, vx: (Math.random() - 0.5) * 9, vy: -8 - Math.random() * 8, r: Math.random() * 360, vr: (Math.random() - 0.5) * 20, w: 10 + Math.random() * 8, c: colors[i % colors.length] });
+    }
+  }
+
+  // ---- events ----
+  el.sev.addEventListener('input', function () { PH.autoSetHealth = false; el.chkAuto.checked = false; updateMoodText(); });
+  el.chkAuto.addEventListener('change', function () { PH.autoSetHealth = el.chkAuto.checked; if (PH.autoSetHealth && PH.ready) { analyzePhoto(); } });
+  el.lang.addEventListener('change', function () { el.script.value = SCRIPTS[el.lang.value].text; showStatus(''); });
+  el.btnSpeak.addEventListener('click', speak);
+  el.btnStop.addEventListener('click', function () { stopAll(); el.caption.textContent = PH.ready ? 'Press Speak. Tap the photo to move my face.' : 'Add a plant photo to begin.'; });
+  el.btnListen.addEventListener('click', toggleMic);
+  el.btnThink.addEventListener('click', think);
+  el.btnCheer.addEventListener('click', cheer);
+  el.btnPlay.addEventListener('click', playFile);
+  el.fileShot.addEventListener('change', function () { loadFile(el.fileShot.files[0]); el.fileShot.value = ''; });
+  el.filePick.addEventListener('change', function () { loadFile(el.filePick.files[0]); el.filePick.value = ''; });
+  [el.lblShot, el.lblPick].forEach(function (lb) { lb.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); lb.querySelector('input').click(); } }); });
+  el.btnCam.addEventListener('click', openCam);
+  el.btnCapture.addEventListener('click', captureCam);
+  el.btnCamCancel.addEventListener('click', closeCam);
+  el.btnSample.addEventListener('click', samplePlant);
+  el.faceSize.addEventListener('input', function () { PH.mult = el.faceSize.value / 100; updateU(); });
+  el.faceSize.addEventListener('change', sampleSkin);
+  el.btnAutoPlace.addEventListener('click', function () { if (PH.ready) { var keep = PH.autoSetHealth; PH.autoSetHealth = false; analyzePhoto(); PH.autoSetHealth = keep; } });
+  el.btnSave.addEventListener('click', function () {
+    if (!PH.ready) return;
+    el.photoCanvas.toBlob(function (b) {
+      var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'doctor-plant.png';
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    }, 'image/png');
+  });
+  ['dragenter', 'dragover'].forEach(function (ev) { el.photoWrap.addEventListener(ev, function (e) { e.preventDefault(); el.empty.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { el.photoWrap.addEventListener(ev, function (e) { e.preventDefault(); el.empty.classList.remove('over'); }); });
+  el.photoWrap.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) loadFile(f); });
+  window.addEventListener('paste', function (e) {
+    var items = (e.clipboardData && e.clipboardData.items) || [];
+    for (var i = 0; i < items.length; i++) if (items[i].type.indexOf('image/') === 0) { loadFile(items[i].getAsFile()); break; }
+  });
+  function pointerMove(e) {
+    var pt = e.touches ? e.touches[0] : e;
+    var r = el.photoCanvas.getBoundingClientRect();
+    if (!r.width) return;
+    var cx = r.left + r.width / 2, cy = r.top + r.height * 0.42;
+    st.pointer = { x: clamp((pt.clientX - cx) / (r.width / 2) * 8, -7, 7), y: clamp((pt.clientY - cy) / (r.height / 2) * 6, -5, 6) };
+  }
+  window.addEventListener('mousemove', pointerMove);
+  window.addEventListener('touchmove', pointerMove, { passive: true });
+  window.addEventListener('beforeunload', function () { if (camStream) camStream.getTracks().forEach(function (t) { t.stop(); }); });
+
+  // ---- batch check: run the analysis on many photos and let a person mark right / wrong ----
+  var batch = [];
+  function decodeFile(f) {
+    if (window.createImageBitmap) return createImageBitmap(f, { imageOrientation: 'from-image' });
+    return new Promise(function (res, rej) { var u = URL.createObjectURL(f), im = new Image(); im.onload = function () { res(im); URL.revokeObjectURL(u); }; im.onerror = rej; im.src = u; });
+  }
+  function batchRun(files) {
+    batch = []; $('batchGrid').innerHTML = ''; $('btnCsv').disabled = true;
+    var list = Array.prototype.slice.call(files), i = 0;
+    var sum = $('batchSummary'); sum.style.display = 'block';
+    function next() {
+      if (i >= list.length) { PH.ready = true; showBatchSummary(); return; }
+      sum.textContent = 'Checking photo ' + (i + 1) + ' of ' + list.length + '...';
+      var f = list[i++];
+      decodeFile(f).then(function (bmp) {
+        loadSource(bmp);
+        drawPhoto({ t: 0, s: 0, smile: 0.6, lid: 0, brow: 0, browLift: 0, bounce: 0 });
+        var th = document.createElement('canvas'), k = 360 / Math.max(PH.W, PH.H); th.width = Math.round(PH.W * k); th.height = Math.round(PH.H * k);
+        th.getContext('2d').drawImage(el.photoCanvas, 0, 0, th.width, th.height);
+        batch.push({ name: f.name, found: PH.found, green: PH.stats.greenPct, dmg: PH.stats.dmgPct, spots: PH.hs.length, soil: PH.soilMode, face: null, dmgOk: null, thumb: th });
+      }).catch(function () {
+        batch.push({ name: f.name, failed: true });
+      }).then(function () { setTimeout(next, 0); });
+    }
+    next();
+  }
+  function mark(idx, key, val, card) {
+    batch[idx][key] = val;
+    Array.prototype.forEach.call(card.querySelectorAll('button[data-k="' + key + '"]'), function (b) { b.className = (b.getAttribute('data-v') === String(val)) ? '' : 'alt'; });
+    showBatchSummary();
+  }
+  function showBatchSummary() {
+    var grid = $('batchGrid');
+    if (!grid.children.length) {
+      batch.forEach(function (b, idx) {
+        var card = document.createElement('div'); card.className = 'readout'; card.style.marginTop = '0';
+        if (b.failed) { card.innerHTML = '<b>' + b.name + '</b><br>Could not read this picture.'; grid.appendChild(card); return; }
+        card.appendChild(b.thumb); b.thumb.style.cssText = 'width:100%;border-radius:8px;display:block;margin-bottom:6px';
+        var info = document.createElement('div');
+        info.innerHTML = '<b>' + b.name + '</b><br>Plant ' + b.green.toFixed(0) + '% of photo, damage ~' + b.dmg.toFixed(0) + '%, ' + b.spots + ' spots, ' + (b.soil ? 'soil background' : 'plain background') + (b.found ? '' : '<br><b style="color:#b00">no plant found</b>');
+        card.appendChild(info);
+        [['face', 'Face on the plant?'], ['dmgOk', 'Red damage looks right?']].forEach(function (q) {
+          var d = document.createElement('div'); d.style.marginTop = '6px'; d.innerHTML = q[1] + '<br>';
+          ['yes', 'no'].forEach(function (v) {
+            var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'alt'; bt.style.cssText = 'padding:3px 12px;margin-right:6px'; bt.textContent = v; bt.setAttribute('data-k', q[0]); bt.setAttribute('data-v', v);
+            bt.addEventListener('click', function () { mark(idx, q[0], v, card); }); d.appendChild(bt);
+          });
+          card.appendChild(d);
+        });
+        grid.appendChild(card);
+      });
+    }
+    var ok = batch.filter(function (b) { return !b.failed; }), fy = ok.filter(function (b) { return b.face === 'yes'; }).length, fa = ok.filter(function (b) { return b.face; }).length;
+    var dy = ok.filter(function (b) { return b.dmgOk === 'yes'; }).length, da = ok.filter(function (b) { return b.dmgOk; }).length;
+    $('batchSummary').innerHTML = '<b>' + ok.length + '</b> photos checked. Face placement right: <b>' + fy + '/' + fa + '</b> marked. Damage right: <b>' + dy + '/' + da + '</b> marked.';
+    $('btnCsv').disabled = !ok.length;
+  }
+  function batchCsv() {
+    var rows = [['photo', 'plant_found', 'plant_pct', 'damage_pct', 'spots', 'background', 'face_ok', 'damage_ok']];
+    batch.forEach(function (b) { if (!b.failed) rows.push([b.name, b.found, b.green.toFixed(1), b.dmg.toFixed(1), b.spots, b.soil ? 'soil' : 'plain', b.face || '', b.dmgOk || '']); });
+    var csv = rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\r\n');
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'doctor-plant-photo-check.csv';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  }
+  $('batchInput').addEventListener('change', function (e) { if (e.target.files.length) batchRun(e.target.files); e.target.value = ''; });
+  $('lblBatch').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('batchInput').click(); } });
+  $('btnCsv').addEventListener('click', batchCsv);
+
+  // small hook for testing and for the real app to feed in a photo
+  window.cropmagixDemo = { loadSource: loadSource, batchRun: batchRun, setLevel: function (n) { el.sev.value = n; updateMoodText(); } };
+
+  el.script.value = SCRIPTS.en.text;
+  updateMoodText();
+  requestAnimationFrame(frame);
+  if (location.hash === '#sample') { samplePlant(); }
+})();
+</script>
+</body>
+</html>
