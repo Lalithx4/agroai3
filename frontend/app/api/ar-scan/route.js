@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { analyzeForAR } from '@/lib/gemini';
+import { analyzeForAR } from '@/lib/bedrock';
 
 export async function POST(request) {
     try {

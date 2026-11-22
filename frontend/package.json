@@ -9,8 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1175.0",
     "@cerebras/cerebras_cloud_sdk": "^1.59.0",
-    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.86.2",
     "lucide-react": "^0.555.0",
     "next": "^16.0.7",

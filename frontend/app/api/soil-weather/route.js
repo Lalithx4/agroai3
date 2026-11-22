@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { analyzeSoil } from '@/lib/gemini';
+import { analyzeSoil } from '@/lib/bedrock';
 import { getCurrentWeather, getForecast, getFarmingAdvice } from '@/lib/weather';
 
 export async function POST(request) {

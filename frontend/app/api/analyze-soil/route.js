@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { analyzeSoil } from '@/lib/gemini';
+import { analyzeSoil } from '@/lib/bedrock';
 
 export async function POST(request) {
     try {
@@ -19,7 +19,7 @@ export async function POST(request) {
         const buffer = Buffer.from(bytes);
         const base64Image = buffer.toString('base64');
 
-        // Analyze soil using Gemini
+        // Analyze soil using Claude Haiku 4.5 (Bedrock)
         const result = await analyzeSoil(base64Image, language);
 
         // Check if AI detected this is not a soil image
