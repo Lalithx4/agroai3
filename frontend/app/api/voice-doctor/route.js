@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { diagnoseForVoice } from '@/lib/voice-doctor';
 import { transcribe, isSarvamConfigured } from '@/lib/sarvam';
-import { CROPS } from '@/lib/crops';
+import { CROP_IDS, cropLabel } from '@/lib/crops';
+import { referenceCrops } from '@/lib/reference-photos';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -13,7 +14,7 @@ const MAX_AUDIO_BYTES = 4 * 1024 * 1024;
  * POST multipart/form-data:
  *   image     (file, required)  photo of the plant
  *   audio     (file, optional)  farmer's spoken symptoms (under about 30 s)
- *   crop      (text, optional)  tomato | chilli | cotton | paddy
+ *   crop      (text, optional)  crop id from GET (tomato, potato, ...); leave empty for any other plant
  *   language  (text, optional)  en | hi | te  (used when speech is not detected)
  */
 export async function POST(request) {
@@ -22,7 +23,7 @@ export async function POST(request) {
     const image = form.get('image');
     const audio = form.get('audio');
     const cropRaw = String(form.get('crop') || '').toLowerCase();
-    const crop = CROPS[cropRaw] ? cropRaw : undefined;
+    const crop = /^[a-z0-9_-]{1,40}$/.test(cropRaw) ? cropRaw : undefined;   // any crop; extra accuracy if it has example photos
     let language = ['en', 'hi', 'te'].includes(String(form.get('language'))) ? String(form.get('language')) : 'en';
 
     if (!image || typeof image === 'string') return NextResponse.json({ error: 'No image provided' }, { status: 400 });
@@ -61,5 +62,10 @@ export async function POST(request) {
 }
 
 export async function GET() {
-  return NextResponse.json({ status: 'ok', sarvam: isSarvamConfigured(), crops: Object.keys(CROPS) });
+  const withExamples = new Set(referenceCrops());
+  const ids = [...new Set([...withExamples, ...CROP_IDS])].sort();
+  return NextResponse.json({
+    status: 'ok', sarvam: isSarvamConfigured(),
+    crops: ids.map((id) => ({ id, name: cropLabel(id), examples: withExamples.has(id) })),
+  });
 }

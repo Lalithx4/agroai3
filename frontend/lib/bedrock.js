@@ -14,7 +14,7 @@ const MODEL_ID = process.env.BEDROCK_MODEL_ID || 'global.anthropic.claude-haiku-
 const MAX_IMAGE_BYTES = 3.75 * 1024 * 1024; // Bedrock per-image limit
 const MAX_EDGE_PX = 1568; // Claude's recommended long edge; larger only adds latency and cost
 
-const client = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const client = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'ap-south-1' });
 
 function stripDataUrl(imageBase64) {
     return imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
@@ -76,6 +76,40 @@ export async function askVision(prompt, imageBase64, maxTokens = 4096) {
         console.warn('Bedrock reply hit maxTokens; JSON may be truncated');
     }
     return parseJson(text);
+}
+
+// Models. Haiku 4.5 stays the fast/cheap default; the Voice Doctor diagnosis uses a stronger model.
+// Change either in .env.local. (Sonnet 4.6 scored best in our tomato test; Sonnet 5.5 needs access in the Bedrock console.)
+export const FAST_MODEL = MODEL_ID;
+export const DIAGNOSIS_MODEL = process.env.BEDROCK_DIAGNOSIS_MODEL || 'global.anthropic.claude-sonnet-4-6';
+const noTemperature = new Set(); // models that reject the temperature setting
+
+/**
+ * Send a mixed list of text and image parts to any Bedrock Claude model and return the parsed JSON reply.
+ * @param {{model?: string, parts: Array<{text: string} | {imageBase64: string}>, maxTokens?: number}} opts
+ */
+export async function askVisionParts({ model = MODEL_ID, parts, maxTokens = 700 }) {
+    const content = [];
+    for (const p of parts) {
+        if (p.cache) { content.push({ cachePoint: { type: 'default' } }); continue; }   // everything before this is cached (5 min), so repeat scans are faster and cheaper
+        if (p.text !== undefined) { content.push({ text: p.text }); continue; }
+        const { bytes, format } = await prepareImage(p.imageBase64);
+        content.push({ image: { format, source: { bytes } } });
+    }
+    const send = (withTemp) => client.send(new ConverseCommand({
+        modelId: model,
+        messages: [{ role: 'user', content }],
+        inferenceConfig: withTemp ? { maxTokens, temperature: 0 } : { maxTokens },
+    }));
+    let response;
+    try {
+        response = await send(!noTemperature.has(model));
+    } catch (e) {
+        if (/temperature/i.test(e.message) && !noTemperature.has(model)) { noTemperature.add(model); response = await send(false); }
+        else throw e;
+    }
+    const text = (response.output?.message?.content || []).map((c) => c.text || '').join('');
+    return { json: parseJson(text), usage: response.usage || {} };
 }
 
 /** Text-only call, used for the fallback chat helper. */

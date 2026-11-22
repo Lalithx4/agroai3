@@ -37,4 +37,19 @@ Main finding: reference photos help far more (+6 to +8 images) than moving to a 
 - Not measured: field photos, other crops (chilli, cotton, paddy), model stated-confidence calibration, cost on the real bill.
 - Next: repeat on 100+ photos from the district, including a held-out set that is never used for choosing prompts or reference photos.
 
+### Third round: the real Voice Doctor code (Sonnet 4.6 diagnosis + Haiku 4.5 sentences), farmer picks the crop
+
+Example photos: 1 per disease (2 for healthy). Test photos are different images from the example photos.
+
+| Test | Correct | Notes |
+|---|---|---|
+| Tomato, all 10 PlantVillage diseases in the example set (test photos cover 5 of them) | 13 to 14 / 20 | worse than the 19/20 with only 5 diseases listed: a longer list is harder. 3 of 4 healthy leaves were called spider mites (confidence 52 to 55, so hedged) |
+| Potato, corn, grape, apple, pepper (12 photos) with 1 to 2 example photos per disease | 10 / 12 | the same plants scored about 2/12 with no example photos (open mode) |
+| All 32 photos | 23 to 24 / 32 | |
+
+Confidence is informative here: answers with stated confidence 70 or more were 17 of 18 correct (about 94%), below 70 only 6 of 14.
+The plant hedges ("I am not sure") on about 60% of answers at the current threshold, including many correct ones.
+Plant identification from one leaf photo is unreliable (Haiku 4.5 named 15/20 tomato leaves correctly and called 8 of 12 other plants "tomato"; Sonnet 4.6 named only 6/20 tomato leaves correctly), so the app uses the farmer's crop choice, or a crop word in what they said, instead.
+Latency: the app's default AWS region was us-east-1 (about 3 s for a tiny call from India). Switching to ap-south-1 (Mumbai) cut the median full answer from about 10 s to about 4.4 s.
+
 Script used: a throwaway Node script (Bedrock Converse API, sharp for resizing). Rebuild it from `frontend/lib/voice-doctor.js` if needed.

@@ -1,15 +1,25 @@
 /**
  * Voice Doctor brain: photo (+ what the farmer said) -> short, honest diagnosis the plant speaks.
- * Server-only. Uses Claude Haiku 4.5 on Bedrock via lib/bedrock.js.
+ * Server-only. Claude on Amazon Bedrock via lib/bedrock.js.
  *
- * Design rules (from our own accuracy test: zero-shot Haiku was only ~25% on 20 tomato leaves):
- *  - closed list of diseases per crop, with "healthy", "other" and "unclear_photo" always allowed
- *  - the plant may say "I am not sure" (Confidence Guard)
- *  - the AI never invents a pesticide dose; it picks from ADVICE_OPTIONS
+ * Works for ANY plant, in three modes (reported back as `mode`):
+ *   examples : the crop has labelled example photos in reference-photos/<crop>/  -> most accurate
+ *   cues     : crop is known (lib/crops.js) but has no example photos           -> medium
+ *   open     : any other plant, the model names the plant and the problem        -> general guess, least reliable
+ *
+ * Two model calls, each doing what it is good at:
+ *   1. DIAGNOSIS_MODEL (Sonnet 4.6 by default) looks at example photos + the farmer's photo and returns facts as short JSON.
+ *   2. FAST_MODEL (Haiku 4.5) turns the facts into three short sentences in the farmer's language, spoken by the plant.
+ *
+ * Safety rules:
+ *  - closed list of diagnoses whenever we have one, plus "healthy", "other" and "unclear_photo"
+ *  - Confidence Guard: the plant says "I am not sure" when it should; thresholds are stricter for unverified modes
+ *  - the AI never invents a pesticide dose; it picks one line from ADVICE_OPTIONS
  */
 
-import { askVision } from './bedrock.js';
-import { CROPS, ADVICE_OPTIONS } from './crops.js';
+import { askVisionParts, DIAGNOSIS_MODEL, FAST_MODEL } from './bedrock.js';
+import { CROPS, ADVICE_OPTIONS, cropLabel } from './crops.js';
+import { loadReferences } from './reference-photos.js';
 
 const LANGUAGE_NAMES = { en: 'English', hi: 'Hindi', te: 'Telugu' };
 
@@ -25,53 +35,71 @@ const EXPERT = {
   te: 'ఇది తీవ్రంగా కనిపిస్తోంది. దయచేసి త్వరగా వ్యవసాయ అధికారికి చూపించండి.',
 };
 
-const CONFIDENCE_MIN = 70;
+// Below these the plant hedges. Tune from measured data (see _bmad-output/experiments).
+export const CONFIDENCE_MIN = { examples: parseInt(process.env.GUARD_EXAMPLES || '70', 10), cues: 80, open: 85 };
 
 function levelFromSeverity(pct, healthy) {
   if (healthy) return 0;
-  if (pct < 2) return 1;
   if (pct < 8) return 1;
   if (pct < 20) return 2;
   if (pct < 40) return 3;
   return 4;
 }
 
-function buildPrompt({ crop, transcript, language }) {
-  const langName = LANGUAGE_NAMES[language] || 'English';
-  const c = crop && CROPS[crop];
-  const ids = c ? ['healthy', ...Object.keys(c.diseases), 'other', 'unclear_photo'] : ['healthy', 'other', 'unclear_photo'];
-  const cues = c
-    ? Object.entries(c.diseases).map(([id, cue]) => `- ${id}: ${cue}`).join('\n')
-    : '- (crop not given: identify the crop; if you cannot name the disease, use "other")';
-  const said = transcript && transcript.trim() ? `The farmer said (extra context only, do not copy it): "${transcript.trim().slice(0, 400)}"` : 'The farmer said nothing.';
+// Crop words the farmer may say, or speech-to-text may return (English, Hindi, Telugu). Add more as needed.
+const CROP_WORDS = {
+  tomato: ['tomato', 'tomatoes', 'टमाटर', 'టమాటా', 'టొమాటో', 'టమోటా'],
+  chilli: ['chilli', 'chili', 'chillies', 'mirchi', 'मिर्च', 'मिरची', 'మిరప', 'మిర్చి'],
+  cotton: ['cotton', 'कपास', 'పత్తి'],
+  paddy: ['paddy', 'rice', 'धान', 'चावल', 'వరి', 'వడ్లు'],
+  potato: ['potato', 'potatoes', 'aloo', 'आलू', 'బంగాళాదుంప', 'ఆలుగడ్డ'],
+  corn: ['corn', 'maize', 'makka', 'मक्का', 'మొక్కజొన్న'],
+  grape: ['grape', 'grapes', 'angoor', 'अंगूर', 'ద్రాక్ష'],
+  apple: ['apple', 'apples', 'seb', 'सेब', 'ఆపిల్'],
+  pepper_bell: ['capsicum', 'bell pepper', 'shimla mirch', 'शिमला मिर्च', 'క్యాప్సికమ్'],
+};
 
-  return `You are a careful plant-health helper for small farmers in India. Look at the photo.
-Crop: ${c ? c.name : 'not given'}.
-Allowed diagnosis ids (choose exactly one): ${ids.join(', ')}.
-Cues:
-- healthy: uniform green, no spots, no dead tissue. MANY photos show healthy leaves; do not invent disease.
-${cues}
-- other: none of the above fits.
-- unclear_photo: blurry, too dark, too far, or not a plant.
-${said}
-
-Allowed advice (pick ONE, translate it, never add doses or brand names):
-${ADVICE_OPTIONS.map((a, i) => `${i + 1}. ${a}`).join('\n')}
-
-First describe what you actually see, then decide. Return ONLY JSON:
-{"observations": "one short sentence in English: lesion colour, shape, size, where",
- "crop": "crop name in English",
- "diagnosis": "one allowed id",
- "second_choice": "another allowed id, or null",
- "confidence": 0-100,
- "severity_percent": 0-100 (share of the leaf damaged; 0 if healthy),
- "sentences": [3 short sentences in ${langName}, spoken by the PLANT in the first person; sentence 1 says how I feel, sentence 2 says what is wrong in simple words (or that I am fine), sentence 3 gives the ONE advice; each under 18 words]}`;
+/** Plant identification from one leaf photo is unreliable (we measured it), so listen for the crop instead. */
+export function cropFromText(text) {
+  const t = String(text || '').toLowerCase();
+  if (!t) return null;
+  // check longer, more specific phrases first ("shimla mirch" before "mirch")
+  const entries = Object.entries(CROP_WORDS).flatMap(([crop, words]) => words.map((w) => [crop, w.toLowerCase()])).sort((a, b) => b[1].length - a[1].length);
+  for (const [crop, w] of entries) if (t.includes(w)) return crop;
+  return null;
 }
 
-function parseJson(text) {
-  const a = text.indexOf('{'), b = text.lastIndexOf('}');
-  if (a === -1 || b <= a) throw new Error('Model did not return JSON');
-  return JSON.parse(text.slice(a, b + 1));
+function diagnosisPrompt({ mode, cropName, ids, cues, transcript }) {
+  const said = transcript && transcript.trim()
+    ? `The farmer said (extra context only): "${transcript.trim().slice(0, 400)}"`
+    : 'The farmer said nothing.';
+  const choice = mode === 'open'
+    ? `diagnosis: one of healthy, disease, unclear_photo. If "disease", name it in disease_name (plain English, e.g. "powdery mildew", "iron deficiency"). If you cannot tell, use unclear_photo.`
+    : `diagnosis: exactly one of ${ids.join(', ')}.`;
+  return `You are a careful plant-health expert helping small farmers in India. The plant is ${cropName || 'unknown: name it'}.
+${choice}
+Many photos show HEALTHY plants; do not invent disease. Use unclear_photo when the photo is blurry, too dark, too far, or not a plant.
+${cues ? 'Cues:\n' + cues + '\n' : ''}${said}
+
+Advice choices (give the number of the ONE best): ${ADVICE_OPTIONS.map((a, i) => `${i + 1}=${a}`).join('; ')}
+
+Reply ONLY JSON: {"plant_name": "common English name", "diagnosis": "...", "disease_name": "plain English name of the problem, or null", "second_choice": "another allowed id, or null", "confidence": 0-100, "severity_percent": 0-100 (share of the leaf damaged, 0 if healthy), "advice": 1-${ADVICE_OPTIONS.length}}`;
+}
+
+async function writeSentences({ facts, language, uncertain }) {
+  const langName = LANGUAGE_NAMES[language] || 'English';
+  const n = uncertain ? 2 : 3;
+  const { json } = await askVisionParts({
+    model: FAST_MODEL,
+    maxTokens: 400,
+    parts: [{
+      text: `Write ${n} short sentences in ${langName} spoken by a PLANT in the first person to its farmer. Simple everyday words, each under 18 words, no brand names, no doses.
+Facts: plant = ${facts.plant}; problem = ${facts.problem}; health level = ${facts.level} of 4 (0 healthy, 4 critical); ${uncertain ? 'the diagnosis is NOT certain, so say it MIGHT be this problem; ' : ''}advice = "${facts.advice}".
+Sentence 1: how I feel. Sentence 2: what is wrong in simple words (or that I am fine)${uncertain ? '' : '. Sentence 3: the advice, translated'}.
+Reply ONLY JSON: {"sentences": [${n} strings]}`,
+    }],
+  });
+  return (Array.isArray(json.sentences) ? json.sentences : []).map(String).filter(Boolean).slice(0, n);
 }
 
 /**
@@ -80,41 +108,79 @@ function parseJson(text) {
 export async function diagnoseForVoice({ imageBase64, crop, transcript = '', language = 'en' }) {
   const lang = LANGUAGE_NAMES[language] ? language : 'en';
   const t0 = Date.now();
-  // askVision parses JSON for us (it tolerates ``` fences) and handles resizing
-  const j = await askVision(buildPrompt({ crop, transcript, language: lang }), imageBase64, 700);
-  const ms = Date.now() - t0;
 
+  // 1. which plant? The farmer's choice wins, then a crop word in what they said. Otherwise: open mode.
+  const picked = crop && /^[a-z0-9_-]+$/i.test(crop) ? crop.toLowerCase() : null;
+  const cropId = picked || cropFromText(transcript);
+
+  // 2. what do we know about this crop?
+  const refs = cropId ? await loadReferences(cropId) : null;
+  const known = cropId ? CROPS[cropId] : null;
+  const mode = refs && refs.length ? 'examples' : known ? 'cues' : 'open';
+  const cropName = cropId ? cropLabel(cropId) : null;
+
+  let ids = [];
+  if (mode !== 'open') {
+    const fromRefs = refs ? [...new Set(refs.map((r) => r.label))] : [];
+    const fromCues = known ? Object.keys(known.diseases) : [];
+    ids = [...new Set(['healthy', ...fromRefs, ...fromCues])];
+    ids.push('other', 'unclear_photo');
+  }
+  const cues = known ? Object.entries(known.diseases).map(([id, cue]) => `- ${id}: ${cue}`).join('\n') : '';
+
+  // 3. diagnosis: example photos first, then the farmer's photo
+  const parts = [];
+  if (mode === 'examples') {
+    parts.push({ text: `Reference photos of ${cropName} leaves with their correct labels:` });
+    refs.forEach((r) => { parts.push({ text: `Label: ${r.label}` }); parts.push({ imageBase64: r.imageBase64 }); });
+    parts.push({ cache: true });
+    parts.push({ text: "Now the farmer's photo to classify:" });
+  }
+  parts.push({ imageBase64 });
+  parts.push({ text: diagnosisPrompt({ mode, cropName, ids, cues, transcript }) });
+  const { json: j } = await askVisionParts({ model: DIAGNOSIS_MODEL, parts, maxTokens: 220 });
+
+  // 4. Confidence Guard
   const healthy = j.diagnosis === 'healthy';
   const unclear = j.diagnosis === 'unclear_photo';
   const confidence = Number.isFinite(+j.confidence) ? Math.max(0, Math.min(100, +j.confidence)) : 0;
   const sev = Number.isFinite(+j.severity_percent) ? Math.max(0, Math.min(100, +j.severity_percent)) : 0;
   let level = levelFromSeverity(sev, healthy);
-  let sentences = (Array.isArray(j.sentences) ? j.sentences : []).map(String).filter(Boolean).slice(0, 3);
+  const closeSecond = mode !== 'open' && !!j.second_choice && j.second_choice !== j.diagnosis && confidence < 85;
+  const uncertain = unclear || j.diagnosis === 'other' || confidence < CONFIDENCE_MIN[mode] || closeSecond;
+  if (unclear) level = 0;
 
-  // Confidence Guard: unclear photo, low confidence, "other", or a close second choice
-  const uncertain = unclear || j.diagnosis === 'other' || confidence < CONFIDENCE_MIN || (!!j.second_choice && j.second_choice !== j.diagnosis && confidence < 85);
-  if (uncertain) {
-    if (sentences.length >= 3) sentences = sentences.slice(0, 2);
-    sentences.push(NOT_SURE[lang]);
-    if (unclear) level = 0;
-  } else if (!healthy && level >= 3) {
-    sentences = sentences.slice(0, 2);
-    sentences.push(EXPERT[lang]);
+  // 5. the plant's words (Haiku), then the fixed safety lines
+  const adviceIdx = Math.max(1, Math.min(ADVICE_OPTIONS.length, parseInt(j.advice, 10) || 1));
+  const problem = healthy ? 'none, the plant looks healthy' : (j.disease_name || String(j.diagnosis || 'unknown').replace(/_/g, ' '));
+  let sentences = [];
+  try {
+    sentences = await writeSentences({
+      facts: { plant: j.plant_name || cropName || 'plant', problem, level, advice: unclear ? ADVICE_OPTIONS[4] : ADVICE_OPTIONS[adviceIdx - 1] },
+      language: lang, uncertain,
+    });
+  } catch (e) {
+    console.error('sentence writer failed:', e.message);
   }
+  if (uncertain) { sentences = sentences.slice(0, 2); sentences.push(NOT_SURE[lang]); }
+  else if (!healthy && level >= 3) { sentences = sentences.slice(0, 2); sentences.push(EXPERT[lang]); }
   if (!sentences.length) sentences = [NOT_SURE[lang]];
 
   return {
-    crop: j.crop || (crop && CROPS[crop] ? CROPS[crop].name : null),
+    crop: cropId || null,
+    plant_name: j.plant_name || cropName || null,
     diagnosis: j.diagnosis || 'other',
+    disease_name: j.disease_name || null,
     second_choice: j.second_choice || null,
     confidence,
     severity_percent: sev,
-    level,                       // 0 healthy .. 4 critical, drives the plant's mood and voice
+    level,                        // 0 healthy .. 4 critical: drives the plant's mood and voice
     uncertain,
-    observations: j.observations || '',
+    mode,                         // examples | cues | open
+    verified: mode === 'examples',
     sentences,
     language: lang,
-    latency_ms: ms,
-    reviewed_cues: !!(crop && CROPS[crop] && CROPS[crop].reviewed),
+    latency_ms: Date.now() - t0,
+    model: DIAGNOSIS_MODEL,
   };
 }

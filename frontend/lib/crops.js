@@ -61,3 +61,8 @@ export const ADVICE_OPTIONS = [
   'take another photo (closer, in daylight, show the underside of the leaf)',
   'keep checking the plant every day and take another photo in three days',
 ];
+
+export function cropLabel(id) {
+  if (CROPS[id]) return CROPS[id].name;
+  return String(id).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}

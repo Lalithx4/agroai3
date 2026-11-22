@@ -17,6 +17,11 @@ const nextConfig = {
     ],
   },
   
+  // Make sure the labelled example photos ship with the Voice Doctor API when deployed (e.g. on Vercel)
+  outputFileTracingIncludes: {
+    '/api/voice-doctor': ['./reference-photos/**/*'],
+  },
+
   // Enable compression
   compress: true,
   

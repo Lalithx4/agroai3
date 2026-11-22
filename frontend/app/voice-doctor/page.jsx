@@ -6,13 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { DoctorPlant } from '@/lib/doctor-plant-engine';
 import './voice-doctor.css';
 
-const CROPS = [
-    { id: '', label: 'Not sure / other' },
-    { id: 'tomato', label: 'Tomato' },
-    { id: 'chilli', label: 'Chilli' },
-    { id: 'cotton', label: 'Cotton' },
-    { id: 'paddy', label: 'Paddy (rice)' },
-];
+const FALLBACK_CROPS = [{ id: 'tomato', name: 'Tomato', examples: true }];
 const LANGS = [
     { id: 'en', label: 'English' },
     { id: 'hi', label: 'हिन्दी' },
@@ -20,15 +14,18 @@ const LANGS = [
 ];
 const MAX_RECORD_MS = 25000;
 
-const DIAGNOSIS_LABEL = (d) => (d ? d.replace(/_/g, ' ') : '');
+const problemName = (r) => (r.disease_name || (r.diagnosis ? r.diagnosis.replace(/_/g, ' ') : '')).toLowerCase();
 
 function traffic(result) {
     if (!result) return null;
     if (result.diagnosis === 'unclear_photo') return { cls: 'grey', icon: '📷', title: 'Photo not clear', sub: 'Please take another photo in daylight, closer to the leaf.' };
-    if (result.uncertain) return { cls: 'amber', icon: '❓', title: 'Not sure', sub: 'Take another photo, or ask the agriculture officer.' };
+    if (result.uncertain) {
+        const maybe = result.diagnosis === 'healthy' ? 'It may be healthy' : result.diagnosis !== 'other' ? `It may be: ${problemName(result)}` : '';
+        return { cls: 'amber', icon: '❓', title: 'Not sure', sub: `${maybe}${maybe ? '. ' : ''}Take another photo, or ask the agriculture officer.` };
+    }
     if (result.diagnosis === 'healthy') return { cls: 'green', icon: '✅', title: 'Looks healthy', sub: 'Keep checking the plant every few days.' };
-    if (result.level >= 3) return { cls: 'red', icon: '⚠️', title: 'Serious problem', sub: `Possible: ${DIAGNOSIS_LABEL(result.diagnosis)}. Show it to the agriculture officer soon.` };
-    return { cls: 'amber', icon: '🟠', title: 'Needs care', sub: `Possible: ${DIAGNOSIS_LABEL(result.diagnosis)}.` };
+    if (result.level >= 3) return { cls: 'red', icon: '⚠️', title: 'Serious problem', sub: `Likely: ${problemName(result)}. Show it to the agriculture officer soon.` };
+    return { cls: 'amber', icon: '🟠', title: 'Needs care', sub: `Likely: ${problemName(result)}.` };
 }
 
 export default function VoiceDoctorPage() {
@@ -41,6 +38,7 @@ export default function VoiceDoctorPage() {
 
     const [lang, setLang] = useState('en');
     const [crop, setCrop] = useState('');
+    const [crops, setCrops] = useState(FALLBACK_CROPS);
     const [hasPhoto, setHasPhoto] = useState(false);
     const [photoInfo, setPhotoInfo] = useState(null);
     const [recording, setRecording] = useState(false);
@@ -55,6 +53,10 @@ export default function VoiceDoctorPage() {
     useEffect(() => {
         if (['en', 'hi', 'te'].includes(language)) setLang(language);
     }, [language]);
+
+    useEffect(() => {
+        fetch('/api/voice-doctor').then((r) => r.json()).then((d) => { if (Array.isArray(d.crops) && d.crops.length) setCrops(d.crops); }).catch(() => {});
+    }, []);
 
     useEffect(() => {
         const engine = new DoctorPlant(canvasRef.current);
@@ -199,9 +201,10 @@ export default function VoiceDoctorPage() {
                         <button key={l.id} type="button" className={'vd-chip' + (lang === l.id ? ' on' : '')} onClick={() => { setLang(l.id); setLanguage && setLanguage(l.id); }}>{l.label}</button>
                     ))}
                 </div>
-                <label className="small" htmlFor="vd-crop">Which crop? (helps me guess better)</label>
+                <label className="small" htmlFor="vd-crop">Which plant? (any plant works; I am best at the ones marked ★)</label>
                 <select id="vd-crop" value={crop} onChange={(e) => setCrop(e.target.value)}>
-                    {CROPS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    <option value="">Any other plant</option>
+                    {crops.map((c) => <option key={c.id} value={c.id}>{c.name}{c.examples ? ' ★' : ''}</option>)}
                 </select>
             </div>
 
@@ -253,7 +256,13 @@ export default function VoiceDoctorPage() {
                         <button type="button" className="vd-btn alt" onClick={replay}><Volume2 size={18} /> Hear again</button>
                     </div>
                     {result.transcript && <div className="vd-meta">I heard: “{result.transcript}”</div>}
-                    <div className="vd-meta">AI guess, about {Math.round(result.confidence)}% sure. Please confirm with your agriculture officer before spraying. {Math.round(result.latency_ms / 100) / 10}s</div>
+                    <div className="vd-meta">
+                        {result.plant_name ? <>Plant: <b>{result.plant_name}</b>. </> : null}
+                        {result.verified
+                            ? 'Compared with example photos of this crop.'
+                            : 'General guess: I have no example photos of this plant yet, so I am less reliable.'}
+                        {' '}About {Math.round(result.confidence)}% sure. Please confirm with your agriculture officer before spraying. ({Math.round(result.latency_ms / 100) / 10}s)
+                    </div>
                 </div>
             )}
         </div>
