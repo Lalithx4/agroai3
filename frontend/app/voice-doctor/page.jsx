@@ -1,5 +1,6 @@
 'use client';
 
+import { toWav } from '@/lib/audio-wav';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Camera, Image as ImageIcon, Mic, Square, Loader2, Volume2, Stethoscope, Leaf, CheckCircle2, AlertTriangle, HelpCircle, CircleAlert, ScanEye } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -273,8 +274,9 @@ export default function VoiceDoctorPage() {
             rec.onstop = () => {
                 stream.getTracks().forEach((t) => t.stop());
                 const blob = new Blob(recRef.current.chunks, { type: rec.mimeType || 'audio/webm' });
-                setAudioBlob(blob.size > 0 ? blob : null);
                 setRecording(false);
+                // Sarvam speech-to-text only takes WAV/MP3, not the browser's webm.
+                if (blob.size > 0) toWav(blob).then((wav) => setAudioBlob(wav)); else setAudioBlob(null);
                 if (engine && engine.mode === 'listening') engine.setMode('idle');
             };
             rec.start();
@@ -336,7 +338,7 @@ export default function VoiceDoctorPage() {
             const img = await engine.toBlob(0.85);
             const form = new FormData();
             form.append('image', img, 'plant.jpg');
-            if (audioBlob) form.append('audio', audioBlob, 'speech.webm');
+            if (audioBlob) form.append('audio', audioBlob, 'speech.wav');
             if (crop) form.append('crop', crop);
             form.append('language', lang);
             const r = await fetch('/api/voice-doctor', { method: 'POST', body: form });

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { AlertTriangle, Lightbulb, BookOpen, Droplets, Sun, FileText, Mic, Square, Loader2, PhoneOff, Volume2 } from 'lucide-react';
 import { PlantVoice } from './plant-voice';
+import { toWav } from '@/lib/audio-wav';
 import './ar-overlay.css';
 
 /**
@@ -255,7 +256,7 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport, cal
             setTalk('thinking');
             try {
                 const form = new FormData();
-                form.append('audio', clip, 'turn.webm');
+                form.append('audio', await toWav(clip), 'turn.wav');
                 form.append('language', language);
                 const stt = await (await fetch('/api/transcribe', { method: 'POST', body: form })).json();
                 const heard = (stt.transcript || '').trim();
@@ -429,7 +430,7 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport, cal
                             <ul className="arx-rows">
                                 {data.issue && <li style={{ '--i': 4 }} className="arx-row warn"><AlertTriangle size={16} aria-hidden="true" /><span>{data.issue}</span></li>}
                                 {data.tip && <li style={{ '--i': 5 }} className="arx-row"><Lightbulb size={16} aria-hidden="true" /><span><b>{c.tip}.</b> {data.tip}</span></li>}
-                                {data.fact && <li style={{ '--i': 6 }} className="arx-row"><BookOpen size={16} aria-hidden="true" /><span><b>{c.fact}.</b> {data.fact}</span></li>}
+                                {data.fact && <li style={{ '--i': 6 }} className="arx-row fact"><BookOpen size={16} aria-hidden="true" /><span><b>{c.fact}.</b> {data.fact}</span></li>}
                             </ul>
                             <span className="arx-chips" style={{ '--i': 7 }}>
                                 {data.water && <span className="arx-chip"><Droplets size={14} aria-hidden="true" />{c.water[data.water] || data.water}</span>}

@@ -46,7 +46,9 @@ export const KEYTERMS = [
  */
 export async function transcribe(audio, { language } = {}) {
   const form = new FormData();
-  form.append('file', audio, audio.name || 'speech.webm');
+  const type = String(audio.type || 'audio/wav').split(';')[0];
+  const ext = type.includes('wav') ? 'wav' : type.includes('mpeg') || type.includes('mp3') ? 'mp3' : type.includes('mp4') ? 'm4a' : 'webm';
+  form.append('file', new Blob([await audio.arrayBuffer()], { type }), `speech.${ext}`);
   form.append('model', STT_MODEL);
   form.append('mode', 'codemix');                       // Indic words in native script, English words in English
   form.append('language_code', language && TO_BCP[language] ? TO_BCP[language] : 'unknown');

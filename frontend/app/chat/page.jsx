@@ -1,5 +1,6 @@
 'use client';
 
+import { toWav } from '@/lib/audio-wav';
 import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -201,7 +202,7 @@ export default function ChatPage() {
         setIsTranscribing(true);
         try {
             const formData = new FormData();
-            formData.append('audio', audioBlob);
+            formData.append('audio', await toWav(audioBlob), 'speech.wav');
             formData.append('language', language);
             
             const response = await fetch('/api/transcribe', {
