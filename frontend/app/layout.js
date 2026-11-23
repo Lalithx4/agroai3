@@ -4,6 +4,7 @@ import './globals.css';
 import './pages.css';
 import './shell.css';
 import AppShell from '@/components/layout/AppShell';
+import ServiceWorkerRegister from '@/components/pwa/ServiceWorkerRegister';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ToastProvider } from '@/contexts/ToastContext';
@@ -51,6 +52,7 @@ export default function RootLayout({ children }) {
           <LanguageProvider>
             <ToastProvider>
               <AppShell>{children}</AppShell>
+            <ServiceWorkerRegister />
             </ToastProvider>
           </LanguageProvider>
         </ThemeProvider>

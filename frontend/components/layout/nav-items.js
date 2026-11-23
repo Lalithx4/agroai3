@@ -11,9 +11,9 @@ export const NAV_ITEMS = [
     { href: '/chat', labelKey: 'navChat', icon: MessageCircle },
 ];
 
-// Routes that own the whole screen (splash, camera) and hide the app header.
-export const NO_HEADER_ROUTES = ['/', '/scanner'];
-// Routes without the mobile tab bar: onboarding, camera, and chat (which has its own input bar).
-export const NO_BOTTOM_NAV_ROUTES = ['/', '/landing', '/scanner', '/chat'];
+// Routes that own the whole screen (splash, camera, offline) and hide the app header.
+export const NO_HEADER_ROUTES = ['/', '/scanner', '/offline'];
+// Routes without the mobile tab bar: onboarding, camera, chat, and offline.
+export const NO_BOTTOM_NAV_ROUTES = ['/', '/landing', '/scanner', '/chat', '/offline'];
 
 export const isActive = (pathname, href) => pathname === href || pathname.startsWith(href + '/');
