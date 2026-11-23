@@ -1,51 +1,56 @@
+import { Fraunces, Public_Sans, Noto_Sans_Devanagari, Noto_Sans_Telugu } from 'next/font/google';
+import './tokens.css';
 import './globals.css';
-import './dashboard.css';
 import './pages.css';
-import Header from '@/components/layout/Header';
+import './shell.css';
+import AppShell from '@/components/layout/AppShell';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ToastProvider } from '@/contexts/ToastContext';
+
+// Field-notebook type: Fraunces for titles and numbers, Public Sans for UI, Noto for Hindi and Telugu script.
+const fraunces = Fraunces({ subsets: ['latin'], display: 'swap', variable: '--font-fraunces', axes: ['opsz', 'SOFT'] });
+const publicSans = Public_Sans({ subsets: ['latin'], display: 'swap', variable: '--font-public-sans' });
+const notoDeva = Noto_Sans_Devanagari({ subsets: ['devanagari'], weight: ['400', '600', '700'], display: 'swap', variable: '--font-noto-deva' });
+const notoTelugu = Noto_Sans_Telugu({ subsets: ['telugu'], weight: ['400', '600', '700'], display: 'swap', variable: '--font-noto-telugu' });
 
 export const metadata = {
   title: 'CropMagix - AI Farming Assistant',
   description: 'CropMagix - AI-powered agricultural assistant for plant health analysis and farming guidance',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/icons/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
     title: 'CropMagix',
-    statusBarStyle: 'black-translucent'
+    statusBarStyle: 'black-translucent',
   },
 };
 
+// Pinch-zoom stays enabled: many farmers need larger text, and blocking zoom fails WCAG 1.4.4.
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#10b981',
+  themeColor: '#F6F1E7',
 };
+
+// Applies the saved theme before first paint (light by default) so there is no flash.
+const themeScript = `try{var t=localStorage.getItem('cropmagix-theme');if(t!=='dark'&&t!=='light'){t='light'}document.documentElement.setAttribute('data-theme',t)}catch(e){}`;
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${fraunces.variable} ${publicSans.variable} ${notoDeva.variable} ${notoTelugu.variable}`} suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
         <ThemeProvider>
           <LanguageProvider>
             <ToastProvider>
-              <Header />
-              <main className="app-main">
-                {children}
-              </main>
+              <AppShell>{children}</AppShell>
             </ToastProvider>
           </LanguageProvider>
         </ThemeProvider>

@@ -7,14 +7,14 @@
 }
 
 /* Header */
+
 .calendar-page .calendar-header {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 16px 20px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border-bottom: 1px solid var(--hairline);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -27,12 +27,12 @@
     gap: 10px;
     font-size: 1.2rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--ink);
 }
 
 .add-btn.primary {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
+    background: var(--leaf);
+    color: var(--on-leaf);
     border: none;
     width: 44px;
     height: 44px;
@@ -49,14 +49,15 @@
 }
 
 /* Weather Banner */
+
 .weather-banner {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 24px;
     padding: 12px 20px;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
-    border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+    background: var(--leaf-tint);
+    border-bottom: 1px solid var(--hairline-strong);
 }
 
 .weather-info {
@@ -64,10 +65,11 @@
     align-items: center;
     gap: 6px;
     font-size: 0.85rem;
-    color: #10b981;
+    color: var(--leaf);
 }
 
 /* Tabs */
+
 .calendar-tabs {
     display: flex;
     gap: 8px;
@@ -81,10 +83,10 @@
     align-items: center;
     gap: 6px;
     padding: 10px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 12px;
-    color: #94a3b8;
+    color: var(--ink-2);
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
@@ -93,16 +95,17 @@
 }
 
 .tab:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--surface);
 }
 
 .tab.active {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: var(--leaf);
     border-color: transparent;
-    color: white;
+    color: var(--on-leaf);
 }
 
 /* Content */
+
 .calendar-content {
     padding: 16px;
     display: flex;
@@ -111,9 +114,10 @@
 }
 
 /* Calendar Card */
+
 .calendar-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 20px;
     padding: 20px;
 }
@@ -128,10 +132,10 @@
 .calendar-nav button {
     width: 40px;
     height: 40px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 12px;
-    color: #f8fafc;
+    color: var(--ink);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -140,13 +144,13 @@
 }
 
 .calendar-nav button:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface);
 }
 
 .month-label {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--ink);
 }
 
 .calendar-grid {
@@ -159,7 +163,7 @@
     text-align: center;
     font-size: 0.7rem;
     font-weight: 600;
-    color: #64748b;
+    color: var(--ink-3);
     padding: 8px 0;
 }
 
@@ -170,7 +174,7 @@
     align-items: center;
     justify-content: center;
     font-size: 0.85rem;
-    color: #f8fafc;
+    color: var(--ink);
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s;
@@ -178,11 +182,11 @@
 }
 
 .day:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface);
 }
 
 .day.today {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: var(--leaf);
     font-weight: 700;
 }
 
@@ -192,7 +196,7 @@
     bottom: 4px;
     width: 4px;
     height: 4px;
-    background: #f59e0b;
+    background: var(--turmeric);
     border-radius: 50%;
 }
 
@@ -210,9 +214,10 @@
 }
 
 /* Recommendations Card */
+
 .recommendations-card {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
-    border: 1px solid rgba(245, 158, 11, 0.2);
+    background: var(--amber-tint);
+    border: 1px solid var(--hairline-strong);
     border-radius: 20px;
     padding: 20px;
 }
@@ -223,7 +228,7 @@
     gap: 8px;
     font-size: 1rem;
     font-weight: 600;
-    color: #f59e0b;
+    color: var(--amber);
     margin-bottom: 16px;
 }
 
@@ -238,21 +243,22 @@
     align-items: center;
     gap: 6px;
     padding: 8px 14px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 100px;
-    color: #f8fafc;
+    color: var(--ink);
     font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .crop-chip:hover {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: #10b981;
+    background: var(--leaf-tint);
+    border-color: var(--leaf);
 }
 
 /* Crops List */
+
 .crops-list {
     display: flex;
     flex-direction: column;
@@ -262,17 +268,17 @@
 .empty-state {
     text-align: center;
     padding: 48px 24px;
-    color: #64748b;
+    color: var(--ink-3);
 }
 
 .empty-state svg {
     margin-bottom: 16px;
-    color: #374151;
+    color: var(--ink-3);
 }
 
 .empty-state h3 {
     font-size: 1.2rem;
-    color: #f8fafc;
+    color: var(--ink);
     margin-bottom: 8px;
 }
 
@@ -285,19 +291,20 @@
     align-items: center;
     gap: 8px;
     padding: 14px 24px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: var(--leaf);
     border: none;
     border-radius: 14px;
-    color: white;
+    color: var(--on-leaf);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
 }
 
 /* Crop Card */
+
 .crop-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 20px;
     padding: 20px;
 }
@@ -312,7 +319,7 @@
 .crop-icon-wrap {
     width: 50px;
     height: 50px;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+    background: var(--leaf-tint);
     border-radius: 14px;
     display: flex;
     align-items: center;
@@ -330,22 +337,22 @@
 .crop-info h4 {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--ink);
     margin-bottom: 2px;
 }
 
 .crop-field {
     font-size: 0.8rem;
-    color: #64748b;
+    color: var(--ink-3);
 }
 
 .delete-btn {
     width: 40px;
     height: 40px;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: var(--terracotta-tint);
+    border: 1px solid var(--hairline-strong);
     border-radius: 10px;
-    color: #ef4444;
+    color: var(--terracotta);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -354,17 +361,18 @@
 }
 
 .delete-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: var(--terracotta-tint);
 }
 
 /* Progress */
+
 .crop-progress {
     margin-bottom: 16px;
 }
 
 .progress-bar {
     height: 8px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface);
     border-radius: 4px;
     overflow: hidden;
     margin-bottom: 8px;
@@ -372,7 +380,7 @@
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    background: var(--leaf);
     border-radius: 4px;
     transition: width 0.5s ease;
 }
@@ -381,18 +389,19 @@
     display: flex;
     justify-content: space-between;
     font-size: 0.75rem;
-    color: #64748b;
+    color: var(--ink-3);
 }
 
 .stage-badge {
-    background: rgba(16, 185, 129, 0.2);
-    color: #10b981;
+    background: var(--leaf-tint);
+    color: var(--leaf);
     padding: 2px 8px;
     border-radius: 100px;
     font-weight: 600;
 }
 
 /* Crop Stats */
+
 .crop-stats {
     display: flex;
     flex-wrap: wrap;
@@ -404,10 +413,11 @@
     align-items: center;
     gap: 6px;
     font-size: 0.8rem;
-    color: #94a3b8;
+    color: var(--ink-2);
 }
 
 /* AI Advisor */
+
 .ai-advisor {
     display: flex;
     flex-direction: column;
@@ -419,31 +429,31 @@
     align-items: center;
     gap: 16px;
     padding: 20px;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%);
-    border: 1px solid rgba(139, 92, 246, 0.2);
+    background: var(--sky-tint);
+    border: 1px solid var(--hairline-strong);
     border-radius: 20px;
 }
 
 .ai-avatar {
     width: 60px;
     height: 60px;
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    background: var(--sky);
     border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--on-leaf);
 }
 
 .ai-header h3 {
     font-size: 1.2rem;
-    color: #f8fafc;
+    color: var(--ink);
     margin-bottom: 4px;
 }
 
 .ai-header p {
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: var(--ink-2);
 }
 
 .get-advice-btn {
@@ -452,10 +462,10 @@
     justify-content: center;
     gap: 10px;
     padding: 16px 24px;
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    background: var(--sky);
     border: none;
     border-radius: 14px;
-    color: white;
+    color: var(--on-leaf);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -464,7 +474,6 @@
 
 .get-advice-btn:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
 }
 
 .get-advice-btn:disabled {
@@ -477,13 +486,18 @@
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .ai-advice-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 20px;
     padding: 20px;
 }
@@ -491,7 +505,7 @@
 .advice-content {
     font-size: 0.95rem;
     line-height: 1.7;
-    color: #e2e8f0;
+    color: var(--ink);
 }
 
 .advice-content p {
@@ -503,14 +517,15 @@
     align-items: center;
     gap: 12px;
     padding: 20px;
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.2);
+    background: var(--amber-tint);
+    border: 1px solid var(--hairline-strong);
     border-radius: 14px;
-    color: #f59e0b;
+    color: var(--amber);
     font-size: 0.9rem;
 }
 
 /* Modal */
+
 .modal {
     position: fixed;
     inset: 0;
@@ -524,8 +539,7 @@
 .modal-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
+    background: var(--scrim);
 }
 
 .modal-box {
@@ -534,8 +548,8 @@
     max-width: 420px;
     max-height: 90vh;
     overflow-y: auto;
-    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 24px;
     padding: 24px;
 }
@@ -546,10 +560,10 @@
     right: 16px;
     width: 32px;
     height: 32px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface);
     border: none;
     border-radius: 8px;
-    color: #94a3b8;
+    color: var(--ink-2);
     font-size: 1.2rem;
     cursor: pointer;
 }
@@ -559,11 +573,12 @@
     align-items: center;
     gap: 10px;
     font-size: 1.3rem;
-    color: #f8fafc;
+    color: var(--ink);
     margin-bottom: 24px;
 }
 
 /* Crop Type Grid */
+
 .crop-type-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -577,10 +592,10 @@
     align-items: center;
     gap: 4px;
     padding: 12px 8px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--surface);
     border: 2px solid transparent;
     border-radius: 12px;
-    color: #94a3b8;
+    color: var(--ink-2);
     font-size: 0.7rem;
     cursor: pointer;
     transition: all 0.2s;
@@ -591,16 +606,17 @@
 }
 
 .crop-type-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--surface);
 }
 
 .crop-type-btn.selected {
-    background: rgba(16, 185, 129, 0.15);
-    border-color: #10b981;
-    color: #10b981;
+    background: var(--leaf-tint);
+    border-color: var(--leaf);
+    color: var(--leaf);
 }
 
 /* Form Groups */
+
 .form-group {
     margin-bottom: 16px;
 }
@@ -611,7 +627,7 @@
     gap: 6px;
     font-size: 0.85rem;
     font-weight: 500;
-    color: #94a3b8;
+    color: var(--ink-2);
     margin-bottom: 8px;
 }
 
@@ -619,25 +635,26 @@
 .form-group select {
     width: 100%;
     padding: 14px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 12px;
-    color: #f8fafc;
+    color: var(--ink);
     font-size: 1rem;
 }
 
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #10b981;
+    border-color: var(--leaf);
 }
 
 /* Crop Info Preview */
+
 .crop-info-preview {
     display: flex;
     gap: 16px;
     padding: 12px 16px;
-    background: rgba(16, 185, 129, 0.1);
+    background: var(--leaf-tint);
     border-radius: 12px;
     margin-bottom: 20px;
 }
@@ -647,7 +664,7 @@
     align-items: center;
     gap: 6px;
     font-size: 0.85rem;
-    color: #10b981;
+    color: var(--leaf);
 }
 
 .submit-btn {
@@ -657,10 +674,10 @@
     justify-content: center;
     gap: 8px;
     padding: 16px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: var(--leaf);
     border: none;
     border-radius: 14px;
-    color: white;
+    color: var(--on-leaf);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -669,10 +686,10 @@
 
 .submit-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
 }
 
 /* Mobile */
+
 @media (max-width: 479px) {
     .weather-banner {
         gap: 16px;
@@ -698,21 +715,36 @@
 }
 
 /* Light Mode */
-[data-theme="light"] .calendar-card,
-[data-theme="light"] .recommendations-card,
-[data-theme="light"] .crop-card,
-[data-theme="light"] .ai-advice-card {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(0, 0, 0, 0.08);
+
+/* ===== Field notebook adjustments ===== */
+.day.today {
+    color: var(--on-leaf);
 }
 
-[data-theme="light"] .month-label,
-[data-theme="light"] .crop-info h4,
-[data-theme="light"] .day {
-    color: #0f172a;
+.day.has-event::after {
+    background: var(--turmeric);
 }
 
-[data-theme="light"] .modal-box {
-    background: #ffffff;
-    border-color: rgba(0, 0, 0, 0.1);
+.calendar-tabs {
+    width: 100%;
+    max-width: var(--page-max, 960px);
+    margin: 0 auto;
+    padding-left: var(--gutter, 16px);
+    padding-right: var(--gutter, 16px);
+}
+
+.calendar-tabs .tab.active,
+.calendar-tabs .tab[aria-selected="true"] {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+}
+
+/* Square cells get enormous on wide screens; cap the cell height instead */
+@media (min-width: 640px) {
+    .day {
+        aspect-ratio: auto;
+        min-height: 52px;
+        font-size: 0.95rem;
+    }
 }

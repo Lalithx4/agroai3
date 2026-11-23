@@ -190,7 +190,7 @@ export default function CalendarPage() {
         saveCrops([...crops, newCrop]); 
         setShowModal(false); 
         setFormData({ type: 'tomato', date: '', field: '', area: '' });
-        showToast(`${cropInfo.label} added! 🌱`, 'success');
+        showToast(`${cropInfo.label} added! `, 'success');
     };
     
     const deleteCrop = (id) => {
@@ -333,7 +333,7 @@ export default function CalendarPage() {
                                                         <span 
                                                             key={idx} 
                                                             className="event-dot"
-                                                            style={{ background: e.plantingDate.includes(`-${String(day).padStart(2, '0')}`) ? '#10b981' : '#f59e0b' }}
+                                                            style={{ background: e.plantingDate.includes(`-${String(day).padStart(2, '0')}`) ? 'var(--leaf)' : 'var(--amber)' }}
                                                         ></span>
                                                     ))}
                                                 </div>
@@ -359,7 +359,7 @@ export default function CalendarPage() {
                                                 setShowModal(true);
                                             }}
                                         >
-                                            <span>{crop.emoji}</span>
+                                            {crop.icon && <crop.icon size={16} aria-hidden="true" />}
                                             {crop.label}
                                         </button>
                                     );
@@ -392,7 +392,7 @@ export default function CalendarPage() {
                                     <div key={crop.id} className="crop-card">
                                         <div className="crop-card-header">
                                             <div className="crop-icon-wrap">
-                                                <span className="crop-emoji">{cropInfo.emoji}</span>
+                                                {cropInfo.icon && <cropInfo.icon size={22} aria-hidden="true" />}
                                             </div>
                                             <div className="crop-info">
                                                 <h4>{cropInfo.label}</h4>
@@ -424,7 +424,7 @@ export default function CalendarPage() {
                                                     {daysLeft > 0 
                                                         ? `${daysLeft} days to harvest` 
                                                         : daysLeft === 0 
-                                                            ? '🎉 Harvest today!' 
+                                                            ? 'Harvest today!' 
                                                             : 'Ready to harvest!'}
                                                 </span>
                                             </div>
@@ -500,7 +500,7 @@ export default function CalendarPage() {
                                     className={`crop-type-btn ${formData.type === key ? 'selected' : ''}`}
                                     onClick={() => setFormData({ ...formData, type: key })}
                                 >
-                                    <span className="emoji">{crop.emoji}</span>
+                                    {crop.icon && <crop.icon size={20} aria-hidden="true" />}
                                     <span>{crop.label}</span>
                                 </button>
                             ))}

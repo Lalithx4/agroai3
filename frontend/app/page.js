@@ -1,64 +1,50 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Leaf, Loader2 } from 'lucide-react';
+import { Leaf } from 'lucide-react';
 
+// Splash: first visit goes to Landing, later visits straight to Home.
 export default function RootPage() {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Check if user has seen landing page
-        const hasSeenLanding = localStorage.getItem('cropmagix_seen_landing');
-        
-        // Small delay for smooth transition
-        setTimeout(() => {
-            if (hasSeenLanding) {
-                router.replace('/home');
-            } else {
-                router.replace('/landing');
-            }
-        }, 500);
+        const seen = localStorage.getItem('cropmagix_seen_landing');
+        const timer = setTimeout(() => router.replace(seen ? '/home' : '/landing'), 300);
+        return () => clearTimeout(timer);
     }, [router]);
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'linear-gradient(135deg, #0a0f1a 0%, #1a1f2e 100%)',
-            gap: '20px'
-        }}>
-            <div style={{
-                width: '80px',
-                height: '80px',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                borderRadius: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                boxShadow: '0 20px 60px rgba(16, 185, 129, 0.3)'
-            }}>
-                <Leaf size={40} strokeWidth={1.5} />
-            </div>
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                color: '#94a3b8',
-                fontSize: '0.9rem'
-            }}>
-                <Loader2 size={18} className="spin" style={{ animation: 'spin 1s linear infinite' }} />
-                <span>Loading CropmagiX AI...</span>
-            </div>
-            <style jsx global>{`
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
+        <div className="splash" role="status" aria-label="Loading CropMagix">
+            <span className="splash-mark"><Leaf size={30} strokeWidth={2} aria-hidden="true" /></span>
+            <span className="splash-word">CropMagix</span>
+            <style jsx>{`
+                .splash {
+                    min-height: 100vh;
+                    min-height: 100dvh;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 14px;
+                    background: var(--paper);
+                }
+                .splash-mark {
+                    width: 60px;
+                    height: 60px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 14px;
+                    background: var(--leaf);
+                    color: var(--on-leaf);
+                }
+                .splash-word {
+                    font-family: var(--font-display);
+                    font-size: 1.6rem;
+                    font-weight: 600;
+                    color: var(--ink);
+                    letter-spacing: -0.02em;
                 }
             `}</style>
         </div>

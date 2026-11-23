@@ -1,0 +1,426 @@
+/* ==========================================================================
+   Live AR overlay (ArOverlay.jsx)
+   Reticle glides to the plant and dims everything else, locks on with a ping,
+   then a notebook card rises. CSS-only motion; prefers-reduced-motion is handled globally.
+   ========================================================================== */
+.arx {
+    position: fixed;
+    inset: 0;
+    z-index: 5; /* above the video, below the scanner header (10) and dock */
+    pointer-events: none;
+    --arx-ink: #FFFDF8;
+    --arx-tone: #FFFDF8;
+    --arx-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.arx.tone-ok { --arx-tone: #8CC497; }
+.arx.tone-mild { --arx-tone: #E7B53C; }
+.arx.tone-warn { --arx-tone: #E8A33A; }
+.arx.tone-bad { --arx-tone: #E58468; }
+
+/* Reticle: the huge shadow dims everything outside it, and travels with it */
+.arx-reticle {
+    position: absolute;
+    border-radius: 18px;
+    box-shadow: 0 0 0 100vmax rgba(10, 13, 9, 0.4);
+    transition:
+        left 0.7s var(--arx-ease),
+        top 0.7s var(--arx-ease),
+        width 0.7s var(--arx-ease),
+        height 0.7s var(--arx-ease),
+        box-shadow 0.5s ease;
+}
+
+.arx.is-searching .arx-reticle {
+    box-shadow: 0 0 0 100vmax rgba(10, 13, 9, 0.22);
+}
+
+/* Searching: the corners breathe (animating the dimmed box itself causes compositing artefacts) */
+.arx.is-searching .arx-c {
+    animation: arx-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes arx-breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+
+.arx.is-locked .arx-status {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+}
+
+/* Corner brackets: hover outside while searching; snap in and take the health colour on lock */
+.arx-c {
+    position: absolute;
+    width: 34px;
+    height: 34px;
+    border: 3px solid var(--arx-ink);
+    transition: transform 0.4s var(--arx-ease), border-color 0.4s ease, width 0.4s var(--arx-ease), height 0.4s var(--arx-ease);
+}
+
+.arx-c.tl { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 18px; transform: translate(-8px, -8px); }
+.arx-c.tr { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 18px; transform: translate(8px, -8px); }
+.arx-c.bl { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 18px; transform: translate(-8px, 8px); }
+.arx-c.br { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 18px; transform: translate(8px, 8px); }
+
+.arx.is-locked .arx-c {
+    transform: none;
+    border-color: var(--arx-tone);
+    width: 44px;
+    height: 44px;
+}
+
+/* Sweep line while a frame is being read */
+.arx-sweep {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: 8%;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--arx-tone);
+    opacity: 0.9;
+    animation: arx-sweep 1.3s ease-in-out infinite alternate;
+}
+
+.arx-sweep::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -22px;
+    height: 22px;
+    background: var(--arx-tone);
+    opacity: 0.12;
+}
+
+@keyframes arx-sweep {
+    from { top: 8%; }
+    to { top: 92%; }
+}
+
+/* One ring that expands once, the moment the plant is first locked */
+.arx-ping {
+    position: absolute;
+    inset: -2px;
+    border: 2px solid var(--arx-tone);
+    border-radius: 20px;
+    animation: arx-ping 0.75s var(--arx-ease) forwards;
+}
+
+@keyframes arx-ping {
+    from { opacity: 0.9; transform: scale(1); }
+    to { opacity: 0; transform: scale(1.12); }
+}
+
+/* Name tag pinned above the reticle */
+.arx-tag {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 10px);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    padding: 6px 10px 6px 8px;
+    border-radius: 999px;
+    background: rgba(18, 21, 15, 0.84);
+    border: 1px solid rgba(255, 253, 248, 0.16);
+    color: var(--arx-ink);
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    animation: arx-drop 0.45s var(--arx-ease) both;
+}
+
+.arx-tag b {
+    padding-left: 8px;
+    border-left: 1px solid rgba(255, 253, 248, 0.22);
+    color: var(--arx-tone);
+    font-size: 1rem;
+}
+
+.arx-tag-dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--arx-tone);
+    animation: arx-blink 1.6s ease-in-out infinite;
+}
+
+@keyframes arx-drop {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes arx-blink {
+    50% { opacity: 0.35; }
+}
+
+/* Status line under the scanner header */
+.arx-status {
+    position: absolute;
+    left: 50%;
+    top: calc(78px + env(safe-area-inset-top, 0px));
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100vw - 32px);
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(18, 21, 15, 0.74);
+    color: var(--arx-ink);
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.arx-status-dot {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--arx-tone);
+}
+
+.arx.is-reading .arx-status-dot,
+.arx.is-searching .arx-status-dot {
+    animation: arx-blink 0.9s ease-in-out infinite;
+}
+
+/* The notebook card */
+.arx-card {
+    pointer-events: auto;
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: calc(118px + env(safe-area-inset-bottom, 0px));
+    max-height: 40vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 14px 16px 12px;
+    border-radius: 16px;
+    background: rgba(30, 35, 29, 0.95);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 253, 248, 0.12);
+    border-top: 3px solid var(--arx-tone);
+    color: #ECE7DA;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    animation: arx-card-in 0.5s var(--arx-ease) both;
+}
+
+@keyframes arx-card-in {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: none; }
+}
+
+.arx-card > *,
+.arx-rows > li {
+    animation: arx-row-in 0.45s var(--arx-ease) both;
+    animation-delay: calc(0.08s + var(--i, 0) * 0.06s);
+}
+
+@keyframes arx-row-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+}
+
+.arx-over {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #B3AE9F;
+}
+
+.arx-live {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--arx-tone);
+    color: #12150F;
+}
+
+.arx-name {
+    margin-top: 6px;
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    line-height: 1.1;
+    color: #FFFDF8;
+}
+
+.arx-sci {
+    margin-top: 2px;
+    font-style: italic;
+    font-size: 0.85rem;
+    color: #B3AE9F;
+}
+
+.arx-meter {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "label num" "bar bar";
+    gap: 4px 10px;
+    align-items: end;
+    margin-top: 12px;
+}
+
+.arx-meter-label {
+    grid-area: label;
+    font-size: 0.8rem;
+    color: #B3AE9F;
+}
+
+.arx-meter-num {
+    grid-area: num;
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--arx-tone);
+}
+
+.arx-meter-bar {
+    grid-area: bar;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 253, 248, 0.12);
+    overflow: hidden;
+}
+
+.arx-meter-bar span {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--arx-tone);
+    transform-origin: left;
+    transition: width 0.9s var(--arx-ease), background 0.4s ease;
+    animation: arx-fill 0.9s var(--arx-ease) both;
+}
+
+@keyframes arx-fill {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+.arx-headline {
+    margin-top: 10px;
+    font-size: 1rem;
+    line-height: 1.45;
+    color: #FFFDF8;
+}
+
+.arx-rows {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.arx-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: #D8D3C6;
+}
+
+.arx-row svg {
+    flex-shrink: 0;
+    margin-top: 3px;
+    color: #B3AE9F;
+}
+
+.arx-row b {
+    color: #FFFDF8;
+    font-weight: 600;
+}
+
+.arx-row.warn svg,
+.arx-row.warn span {
+    color: var(--arx-tone);
+}
+
+.arx-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+/* Short phones: keep the essentials (name, health, issue, tip, report) on screen */
+@media (max-height: 760px) and (max-width: 899px) {
+    .arx-sci,
+    .arx-rows li:nth-child(3) {
+        display: none;
+    }
+}
+
+.arx-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.arx-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 253, 248, 0.16);
+    font-size: 0.78rem;
+    color: #D8D3C6;
+}
+
+.arx-report {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 10px;
+    background: #8CC497;
+    color: #12150F;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.12s, background 0.2s;
+}
+
+.arx-report:hover { background: #A8D5B0; }
+.arx-report:active { transform: translateY(1px); }
+.arx-report:focus-visible { outline: 3px solid #FFFDF8; outline-offset: 2px; }
+
+/* Wide screens: the card floats on the right, vertically centred */
+@keyframes arx-card-in-side {
+    from { opacity: 0; transform: translate(24px, -50%); }
+    to { opacity: 1; transform: translate(0, -50%); }
+}
+
+@media (min-width: 900px) {
+    .arx-card {
+        left: auto;
+        right: 24px;
+        top: 50%;
+        bottom: auto;
+        width: 360px;
+        max-height: 70vh;
+        transform: translateY(-50%);
+        animation-name: arx-card-in-side;
+    }
+}

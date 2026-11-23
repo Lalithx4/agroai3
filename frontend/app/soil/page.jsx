@@ -39,6 +39,7 @@ import {
     ChevronDown,
     ChevronUp
 } from 'lucide-react';
+import { Sprout as NbSprout, Mountain as NbMountain, Lightbulb as NbBulb } from 'lucide-react';
 
 export default function SoilAnalysisPage() {
     const { t, language } = useLanguage();
@@ -141,10 +142,10 @@ export default function SoilAnalysisPage() {
             
             if (data.success && data.analysis) {
                 setAnalysisResult(data.analysis);
-                showToast('🌱 Soil analysis complete!', 'success');
+                showToast('Soil analysis complete!', 'success');
             } else if (data.notSoil) {
                 // Not a soil image - show friendly message and reset
-                showToast('📷 Please take a photo of soil, not a person or other object.', 'warning');
+                showToast('Please take a photo of soil, not a person or other object.', 'warning');
                 setCapturedImage(null);
             } else {
                 showToast(data.error || 'Analysis failed. Please try again.', 'error');
@@ -175,10 +176,10 @@ export default function SoilAnalysisPage() {
     };
 
     const getScoreColor = (score) => {
-        if (score >= 80) return '#22c55e';
-        if (score >= 60) return '#eab308';
-        if (score >= 40) return '#f97316';
-        return '#ef4444';
+        if (score >= 80) return 'var(--leaf)';
+        if (score >= 60) return 'var(--turmeric)';
+        if (score >= 40) return 'var(--amber)';
+        return 'var(--terracotta)';
     };
 
     const toggleSection = (section) => {
@@ -201,7 +202,7 @@ export default function SoilAnalysisPage() {
                 <button className="back-btn" onClick={() => router.back()}>
                     <ArrowLeft size={20} />
                 </button>
-                <h1>🌍 {t('soilAnalysisTitle')}</h1>
+                <h1>{t('soilAnalysisTitle')}</h1>
                 {analysisResult && (
                     <button className="reset-btn" onClick={resetAnalysis}>
                         <X size={20} />
@@ -241,9 +242,9 @@ export default function SoilAnalysisPage() {
                                         <Loader2 className="spin" size={48} />
                                         <p>{t('analyzingSoil')}</p>
                                         <div className="analyzing-steps">
-                                            <span className="step active">🔬 {t('soilTexture')}</span>
-                                            <span className="step">⚗️ {t('nutrients')}</span>
-                                            <span className="step">🌱 {t('suitableCrops')}</span>
+                                            <span className="step active">{t('soilTexture')}</span>
+                                            <span className="step">{t('nutrients')}</span>
+                                            <span className="step">{t('suitableCrops')}</span>
                                         </div>
                                     </div>
                                 )}
@@ -251,7 +252,7 @@ export default function SoilAnalysisPage() {
                         ) : (
                             <div className="start-options">
                                 <div className="soil-hero">
-                                    <div className="hero-icon">🌍</div>
+                                    <div className="hero-icon" aria-hidden="true"><NbMountain size={36} strokeWidth={1.5} /></div>
                                     <h2>{t('analyzeSoil')}</h2>
                                     <p>{language === 'hi' ? 'मिट्टी की संरचना, पोषक तत्वों और आदर्श फसलों के बारे में विस्तृत जानकारी प्राप्त करें' : language === 'te' ? 'మట్టి కూర్పు, పోషకాలు మరియు అనుకూల పంటల గురించి వివరమైన సమాచారం పొందండి' : 'Get detailed insights about soil composition, nutrients, and ideal crops'}</p>
                                 </div>
@@ -268,7 +269,7 @@ export default function SoilAnalysisPage() {
                                     </button>
                                 </div>
                                 <div className="tips-section">
-                                    <h4>📸 {t('quickTips')}:</h4>
+                                    <h4>{t('quickTips')}:</h4>
                                     <ul>
                                         <li>{language === 'hi' ? 'प्राकृतिक रोशनी में फोटो लें' : language === 'te' ? 'సహజ వెలుగులో ఫోటో తీయండి' : 'Take photo in natural daylight'}</li>
                                         <li>{language === 'hi' ? 'मुट्ठी भर मिट्टी शामिल करें' : language === 'te' ? 'పిడికిలి మట్టిని చేర్చండి' : 'Include a handful of soil'}</li>
@@ -343,7 +344,7 @@ export default function SoilAnalysisPage() {
 
                         {/* Summary Card */}
                         <div className="summary-card">
-                            <div className="summary-icon">💡</div>
+                            <div className="summary-icon" aria-hidden="true"><NbBulb size={20} /></div>
                             <p>{analysisResult.summary}</p>
                             <div className="priority-action">
                                 <Target size={16} />
@@ -438,26 +439,19 @@ export default function SoilAnalysisPage() {
                                         {(analysisResult.ideal_crops || []).map((crop, idx) => (
                                             <div key={idx} className={`crop-card suitability-${crop.suitability}`}>
                                                 <div className="crop-icon">
-                                                    {crop.crop.toLowerCase().includes('wheat') ? '🌾' :
-                                                     crop.crop.toLowerCase().includes('rice') ? '🍚' :
-                                                     crop.crop.toLowerCase().includes('tomato') ? '🍅' :
-                                                     crop.crop.toLowerCase().includes('potato') ? '🥔' :
-                                                     crop.crop.toLowerCase().includes('corn') || crop.crop.toLowerCase().includes('maize') ? '🌽' :
-                                                     crop.crop.toLowerCase().includes('cotton') ? '💮' :
-                                                     crop.crop.toLowerCase().includes('sugarcane') ? '🎋' :
-                                                     crop.crop.toLowerCase().includes('vegetable') ? '🥬' : '🌱'}
+                                                    <NbSprout size={22} aria-hidden="true" />
                                                 </div>
                                                 <div className="crop-info">
                                                     <h4>{crop.crop}</h4>
                                                     <span className={`suitability-badge ${crop.suitability}`}>
-                                                        {crop.suitability === 'excellent' ? '⭐ Excellent' :
-                                                         crop.suitability === 'good' ? '✅ Good' :
-                                                         crop.suitability === 'moderate' ? '🔶 Moderate' : '⚠️ Poor'}
+                                                        {crop.suitability === 'excellent' ? 'Excellent' :
+                                                         crop.suitability === 'good' ? 'Good' :
+                                                         crop.suitability === 'moderate' ? 'Moderate' : 'Poor'}
                                                     </span>
                                                     <p>{crop.reason}</p>
                                                     {crop.yield_potential && (
                                                         <span className="yield-badge">
-                                                            📈 {crop.yield_potential} yield potential
+                                                            {crop.yield_potential} yield potential
                                                         </span>
                                                     )}
                                                 </div>
@@ -466,7 +460,7 @@ export default function SoilAnalysisPage() {
                                     </div>
                                     {analysisResult.crops_to_avoid && analysisResult.crops_to_avoid.length > 0 && (
                                         <div className="avoid-crops">
-                                            <h4>⚠️ {t('unsuitableCrops')}</h4>
+                                            <h4>{t('unsuitableCrops')}</h4>
                                             <div className="avoid-list">
                                                 {analysisResult.crops_to_avoid.map((crop, idx) => (
                                                     <div key={idx} className="avoid-item">
@@ -496,7 +490,7 @@ export default function SoilAnalysisPage() {
                                                 <div className="amendment-header">
                                                     <span className="amendment-name">{amendment.amendment}</span>
                                                     <span className={`cost-badge ${amendment.cost_estimate?.toLowerCase()}`}>
-                                                        💰 {amendment.cost_estimate || 'Low'}
+                                                        {amendment.cost_estimate || 'Low'}
                                                     </span>
                                                 </div>
                                                 <p className="amendment-purpose">{amendment.purpose}</p>
@@ -513,7 +507,7 @@ export default function SoilAnalysisPage() {
                                                 </div>
                                                 {amendment.organic_option && (
                                                     <div className="organic-alt">
-                                                        🌿 Organic: {amendment.organic_option}
+                                                        Organic: {amendment.organic_option}
                                                     </div>
                                                 )}
                                             </div>
@@ -534,7 +528,7 @@ export default function SoilAnalysisPage() {
                                 <div className="section-content">
                                     <div className="timeline-plan">
                                         <div className="timeline-section immediate">
-                                            <h4>⚡ {t('immediateActions')}</h4>
+                                            <h4>{t('immediateActions')}</h4>
                                             <ul>
                                                 {(analysisResult.improvement_plan.immediate || []).map((action, idx) => (
                                                     <li key={idx}>{action}</li>
@@ -542,7 +536,7 @@ export default function SoilAnalysisPage() {
                                             </ul>
                                         </div>
                                         <div className="timeline-section short-term">
-                                            <h4>📅 {t('weeklyTreatment')}</h4>
+                                            <h4>{t('weeklyTreatment')}</h4>
                                             <ul>
                                                 {(analysisResult.improvement_plan.short_term || []).map((action, idx) => (
                                                     <li key={idx}>{action}</li>
@@ -550,7 +544,7 @@ export default function SoilAnalysisPage() {
                                             </ul>
                                         </div>
                                         <div className="timeline-section long-term">
-                                            <h4>🎯 {t('longTermCare')}</h4>
+                                            <h4>{t('longTermCare')}</h4>
                                             <ul>
                                                 {(analysisResult.improvement_plan.long_term || []).map((action, idx) => (
                                                     <li key={idx}>{action}</li>

@@ -2,35 +2,36 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { translations, t as translate } from '@/services/i18n';
+import { useIsClient } from '@/contexts/ThemeContext';
 
 const LanguageContext = createContext(null);
+const STORAGE_KEY = 'cropmagix-lang';
+
+function readInitialLanguage() {
+    if (typeof window === 'undefined') return 'en';
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved && translations[saved] ? saved : 'en';
+}
 
 export function LanguageProvider({ children }) {
-    const [language, setLanguageState] = useState('en');
-    const [mounted, setMounted] = useState(false);
+    const isClient = useIsClient();
+    const [language, setLanguageState] = useState(readInitialLanguage);
 
+    // Screen readers and fonts pick the right script from <html lang>.
     useEffect(() => {
-        setMounted(true);
-        const saved = localStorage.getItem('cropmagix-lang');
-        if (saved && translations[saved]) {
-            setLanguageState(saved);
-        }
-    }, []);
+        document.documentElement.lang = language;
+    }, [language]);
 
     const setLanguage = useCallback((lang) => {
         if (translations[lang]) {
             setLanguageState(lang);
-            localStorage.setItem('cropmagix-lang', lang);
+            localStorage.setItem(STORAGE_KEY, lang);
         }
     }, []);
 
-    const t = useCallback((key) => {
-        return translate(key, language);
-    }, [language]);
+    const t = useCallback((key) => translate(key, language), [language]);
 
-    if (!mounted) {
-        return null;
-    }
+    if (!isClient) return null;
 
     return (
         <LanguageContext.Provider value={{ language, setLanguage, t }}>

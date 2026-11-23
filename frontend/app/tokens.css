@@ -1,0 +1,140 @@
+/* ==========================================================================
+   CropMagix design tokens: "Field notebook"
+   Source of truth: _bmad-output/planning-artifacts/ux-designs/ux-agroai3-2026-11-23/DESIGN.md
+   Light ("paper") is the default; dark is "night field".
+   Legacy variable names used across older stylesheets are aliased at the bottom.
+   ========================================================================== */
+
+:root,
+[data-theme="light"],
+[data-theme="light"] .scanner-page .result-panel {
+    color-scheme: light;
+    --paper: #F6F1E7;
+    --surface: #FFFDF8;
+    --sunken: #EDE6D6;
+    --ink: #1F2A22;
+    --ink-2: #545C51;
+    --ink-3: #80857A;
+    --hairline: #DDD3BF;
+    --hairline-strong: #C9BCA3;
+    --leaf: #2F5D3A;
+    --leaf-strong: #234A2D;
+    --leaf-tint: #E3EBDD;
+    --turmeric: #D9A21B;
+    --turmeric-tint: #F7EBC8;
+    --terracotta: #B5452A;
+    --terracotta-tint: #F5DFD6;
+    --amber: #B26B00;
+    --amber-tint: #F8E6C4;
+    --sky: #3C6E8F;
+    --sky-tint: #DDE8EF;
+    --on-leaf: #FFFDF8;
+    --scrim: rgba(31, 42, 34, 0.55);
+    --shadow-float: 0 1px 2px rgba(31, 42, 34, 0.06), 0 8px 24px rgba(31, 42, 34, 0.08);
+}
+
+[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #161A15;
+    --surface: #1E231D;
+    --sunken: #12150F;
+    --ink: #ECE7DA;
+    --ink-2: #B3AE9F;
+    --ink-3: #858275;
+    --hairline: #2F352D;
+    --hairline-strong: #3E463B;
+    --leaf: #8CC497;
+    --leaf-strong: #A8D5B0;
+    --leaf-tint: #223126;
+    --turmeric: #E7B53C;
+    --turmeric-tint: #3A3220;
+    --terracotta: #E58468;
+    --terracotta-tint: #3A231C;
+    --amber: #E8A33A;
+    --amber-tint: #382A15;
+    --sky: #7FB0D1;
+    --sky-tint: #1C2A33;
+    --on-leaf: #12150F;
+    --scrim: rgba(0, 0, 0, 0.6);
+    --shadow-float: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+:root {
+    --font-display: var(--font-fraunces), 'Fraunces', Georgia, 'Noto Serif', serif;
+    --font-sans: var(--font-public-sans), 'Public Sans', var(--font-noto-deva), var(--font-noto-telugu), system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 14px;
+    --radius-full: 9999px;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-8: 48px;
+}
+
+/* Legacy aliases: older stylesheets keep working and follow the theme.
+   Re-declared on every element that re-scopes the palette, because var() chains resolve where declared. */
+:root,
+[data-theme="light"],
+[data-theme="dark"],
+.scanner-page,
+[data-theme="light"] .scanner-page .result-panel {
+    --primary: var(--leaf);
+    --primary-50: var(--leaf-tint);
+    --primary-100: var(--leaf-tint);
+    --primary-200: var(--leaf-tint);
+    --primary-300: var(--leaf);
+    --primary-400: var(--leaf);
+    --primary-500: var(--leaf);
+    --primary-600: var(--leaf);
+    --primary-700: var(--leaf-strong);
+    --primary-800: var(--leaf-strong);
+    --accent-400: var(--turmeric);
+    --accent-500: var(--turmeric);
+    --success: var(--leaf);
+    --warning: var(--amber);
+    --danger: var(--terracotta);
+    --info: var(--sky);
+    --bg-primary: var(--paper);
+    --bg-secondary: var(--surface);
+    --bg-card: var(--surface);
+    --bg-elevated: var(--sunken);
+    --bg-glass: var(--surface);
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-2);
+    --text-muted: var(--ink-3);
+    --border-subtle: var(--hairline);
+    --border-default: var(--hairline-strong);
+    --shadow-card: none;
+}
+
+/* The camera is always dark: the scanner uses night-field tokens in both themes */
+.scanner-page {
+    color-scheme: dark;
+    --paper: #161A15;
+    --surface: #1E231D;
+    --sunken: #12150F;
+    --ink: #ECE7DA;
+    --ink-2: #B3AE9F;
+    --ink-3: #858275;
+    --hairline: #2F352D;
+    --hairline-strong: #3E463B;
+    --leaf: #8CC497;
+    --leaf-strong: #A8D5B0;
+    --leaf-tint: #223126;
+    --turmeric-tint: #3A3220;
+    --terracotta: #E58468;
+    --terracotta-tint: #3A231C;
+    --amber: #E8A33A;
+    --amber-tint: #382A15;
+    --sky: #7FB0D1;
+    --sky-tint: #1C2A33;
+    --on-leaf: #12150F;
+    color: var(--ink);
+}

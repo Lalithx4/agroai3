@@ -1,0 +1,779 @@
+/* ==========================================================================
+   CropMagix app shell + responsive layer
+   Loaded last. Owns: header, bottom tab bar, page widths, sticky offsets,
+   safe areas, focus, motion. Breakpoints: phone < 640 · tablet 640–1023 · desktop >= 1024
+   ========================================================================== */
+
+:root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --header-h: calc(60px + var(--safe-top));
+    --nav-h: calc(68px + var(--safe-bottom));
+    --page-max: 960px;
+    --wide-max: 1200px;
+    --gutter: 16px;
+    --focus-ring: 0 0 0 3px color-mix(in srgb, var(--leaf) 45%, transparent);
+    --header-bg: var(--paper);
+    --nav-bg: var(--surface);
+}
+
+@media (min-width: 640px) {
+    :root { --gutter: 24px; }
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Long words in Telugu/Hindi or names should wrap instead of pushing layout wide */
+h1, h2, h3, h4, p, li {
+    overflow-wrap: break-word;
+}
+
+/* `overflow: hidden` makes an element a scroll container, which breaks position: sticky
+   for every page header inside it. `clip` stops sideways overflow without that side effect. */
+body,
+.app-main,
+.screen.active {
+    overflow-x: clip !important;
+}
+
+.score-num,
+.score-text {
+    white-space: nowrap;
+}
+
+img, video, canvas, svg {
+    max-width: 100%;
+}
+
+button, a, [role="button"], input, select, textarea {
+    touch-action: manipulation;
+}
+
+/* iOS zooms into inputs with text smaller than 16px; keep form text at 16px on touch screens */
+@media (pointer: coarse) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+        font-size: max(16px, 1em) !important;
+    }
+}
+
+:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: 10px;
+}
+
+.skip-link {
+    position: fixed;
+    left: 12px;
+    top: -60px;
+    z-index: 1000;
+    padding: 10px 16px;
+    border-radius: 12px;
+    background: var(--leaf);
+    color: var(--on-leaf);
+    font-weight: 700;
+    transition: top 0.2s;
+}
+
+.skip-link:focus {
+    top: calc(var(--safe-top) + 8px);
+}
+
+/* ===== Header ===== */
+.app-header {
+    height: var(--header-h);
+    padding: var(--safe-top) max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
+    gap: 16px;
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border-subtle);
+    z-index: 200;
+}
+
+.logo {
+    flex-shrink: 0;
+    gap: 10px;
+}
+
+.logo-mark {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 11px;
+    background: var(--leaf);
+    color: var(--on-leaf);
+}
+
+.logo-text {
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.header-nav {
+    display: none;
+}
+
+.header-right {
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.language-selector {
+    border: 1px solid var(--border-subtle);
+}
+
+.lang-btn {
+    min-width: 36px;
+    min-height: 32px;
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+.theme-toggle {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+}
+
+@media (min-width: 1024px) {
+    .header-nav {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex: 1;
+        justify-content: center;
+        min-width: 0;
+    }
+
+    .header-nav-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .header-nav-link:hover {
+        color: var(--text-primary);
+        background: var(--bg-glass);
+    }
+
+    .header-nav-link.active {
+        color: var(--primary-400);
+        background: var(--leaf-tint);
+    }
+
+    [data-theme="light"] .header-nav-link.active {
+        color: var(--primary-700);
+    }
+}
+
+/* ===== Main area ===== */
+.app-main {
+    padding-top: var(--header-h);
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+.app-main.no-header {
+    padding-top: 0;
+}
+
+/* ===== Bottom tab bar (phones + tablets) ===== */
+.bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+    height: var(--nav-h);
+    padding: 6px max(8px, env(safe-area-inset-right)) var(--safe-bottom) max(8px, env(safe-area-inset-left));
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+    background: var(--nav-bg);
+    border-top: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-float);
+}
+
+.bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 52px;
+    padding: 4px 2px;
+    border-radius: 14px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.bottom-nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 30px;
+    border-radius: 999px;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.bottom-nav-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+.bottom-nav-item.active {
+    color: var(--primary-400);
+}
+
+.bottom-nav-item.active .bottom-nav-icon {
+    background: var(--leaf-tint);
+}
+
+
+.bottom-nav-item.primary .bottom-nav-icon {
+    width: 54px;
+    height: 54px;
+    margin-top: -26px;
+    border-radius: 18px;
+    color: var(--on-leaf);
+    background: var(--leaf);
+    box-shadow: 0 0 0 4px var(--surface);
+}
+
+.bottom-nav-item.primary {
+    color: var(--text-secondary);
+}
+
+.bottom-nav-item:active .bottom-nav-icon {
+    transform: scale(0.92);
+}
+
+.app-main.has-bottom-nav {
+    padding-bottom: calc(var(--nav-h) + 12px);
+}
+
+/* Toasts sit above the tab bar */
+.app-main.has-bottom-nav ~ .toast-container,
+.toast-container {
+    bottom: calc(var(--nav-h) + 12px) !important;
+}
+
+@media (min-width: 1024px) {
+    .bottom-nav {
+        display: none;
+    }
+
+    .app-main.has-bottom-nav {
+        padding-bottom: 32px;
+    }
+
+    .toast-container {
+        bottom: 24px !important;
+    }
+}
+
+/* ===== Page headers: stick just below the app header ===== */
+.chat-header,
+.weather-header,
+.calendar-header,
+.medicine-header,
+.pest-header,
+.history-header,
+.soil-header,
+.weather-page .weather-header,
+.calendar-page .calendar-header {
+    top: var(--header-h) !important;
+    width: 100% !important;
+    margin: 0 !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: 60 !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+    /* full-bleed bar, contents aligned with the page column */
+    padding-left: max(var(--gutter), calc((100% - var(--page-max)) / 2)) !important;
+    padding-right: max(var(--gutter), calc((100% - var(--page-max)) / 2)) !important;
+    background: var(--header-bg) !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+.medicine-header h2,
+.pest-header h2,
+.history-header h2,
+.weather-page .weather-header h2,
+.calendar-page .calendar-header h2,
+.soil-header h1 {
+    color: var(--text-primary) !important;
+    -webkit-text-fill-color: currentColor !important;
+    background: none !important;
+    font-size: clamp(1.1rem, 2.5vw, 1.35rem) !important;
+}
+
+.back-btn,
+.refresh-btn,
+.clear-btn {
+    min-width: 40px;
+    min-height: 40px;
+    flex-shrink: 0;
+}
+
+/* ===== Page content columns ===== */
+.weather-content,
+.calendar-content,
+.medicine-content,
+.pest-content,
+.history-list,
+.soil-content {
+    width: 100%;
+    max-width: var(--page-max);
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: var(--gutter) !important;
+    padding-right: var(--gutter) !important;
+    box-sizing: border-box;
+}
+
+.medicine-content,
+.pest-content,
+.history-list,
+.calendar-content {
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+}
+
+/* Medicine: search button + categories should never overflow */
+.medicine-search {
+    width: 100%;
+}
+
+.medicine-search input {
+    min-width: 0;
+}
+
+.medicine-search button {
+    flex-shrink: 0;
+}
+
+.disease-categories {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin-bottom: 16px;
+}
+
+.disease-categories::-webkit-scrollbar {
+    display: none;
+}
+
+.cat-btn {
+    flex-shrink: 0;
+    min-height: 40px;
+}
+
+.disease-card {
+    min-height: 60px;
+    cursor: pointer;
+}
+
+@media (min-width: 768px) {
+    .disease-list {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px !important;
+    }
+
+    .weather-details-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+}
+
+/* Weather: readable condition text in light mode */
+
+/* Horizontal-scrolling forecasts and chip rows */
+.forecast-scroll,
+.forecast-days,
+.forecast-list {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ===== Chat: exactly fills the space between header and bottom of screen ===== */
+.chat-page {
+    height: calc(100vh - var(--header-h)) !important;
+    height: calc(100dvh - var(--header-h)) !important;
+    min-height: 0 !important;
+}
+
+.chat-page .chat-header {
+    position: relative !important;
+    top: 0 !important;
+    flex-shrink: 0;
+}
+
+.chat-body {
+    min-height: 0;
+}
+
+.chat-messages,
+.chat-input-area > *,
+.chat-page .topics-grid {
+    width: 100%;
+    max-width: 860px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.chat-input-area {
+    padding-bottom: max(12px, var(--safe-bottom)) !important;
+}
+
+/* ===== Scanner: controls stay inside the screen and clear the home indicator ===== */
+.scanner-upload-btn svg {
+    margin: 0 !important;
+    color: inherit !important;
+}
+
+/* Phones: the dock is a full-width bottom sheet instead of a narrow floating pill */
+@media (max-width: 479px) {
+    .scanner-dock {
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        transform: none !important;
+        justify-content: space-around;
+        padding: 12px 24px max(16px, calc(var(--safe-bottom) + 8px)) !important;
+        border-left: 0 !important;
+        border-right: 0 !important;
+        border-bottom: 0 !important;
+    }
+}
+
+/* Voice Doctor: no empty gap under the stage when there is no caption */
+.vd-caption:empty {
+    display: none;
+}
+
+/* Chat: the quick-topics card lines up with the message column */
+.chat-page .topics-section {
+    max-width: 860px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* ===== Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Hover lifts only where hover exists */
+@media (hover: none) {
+    .bento-card:hover,
+    .disease-card:hover,
+    .stat-card:hover {
+        transform: none !important;
+    }
+}
+
+/* ==========================================================================
+   Field notebook base layer (DESIGN.md)
+   ========================================================================== */
+body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'tnum' 0;
+}
+
+h1, h2, h3,
+.display, .title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+}
+
+h4, h5 {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+/* Decoration that read as "AI template" is gone for good */
+.ambient-bg, .orb, .grid-pattern, .hero-glow, .card-glow, .bg-particles, .particle,
+.bg-glow, .avatar-pulse, .hero-accent, .bg-gradient {
+    display: none !important;
+}
+
+::selection {
+    background: var(--turmeric-tint);
+    color: var(--ink);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--hairline-strong);
+}
+
+/* Header: paper, wordmark in Fraunces */
+.logo-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+}
+
+.logo-text {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+@media (min-width: 1024px) {
+    .header-nav-link {
+        position: relative;
+        border-radius: 0;
+        padding: 18px 10px;
+    }
+
+    .header-nav-link:hover {
+        background: transparent;
+    }
+
+    .header-nav-link.active {
+        background: transparent;
+        color: var(--ink);
+    }
+
+    .header-nav-link.active::after {
+        content: '';
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        height: 2px;
+        background: var(--leaf);
+    }
+
+    .header-nav-link.active svg {
+        color: var(--leaf);
+    }
+}
+
+.language-selector {
+    background: var(--surface);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-md);
+    padding: 2px;
+}
+
+.lang-btn {
+    border-radius: 7px;
+    color: var(--ink-2);
+    font-family: var(--font-sans);
+}
+
+.lang-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+}
+
+.theme-toggle {
+    background: var(--surface);
+    border: 1px solid var(--hairline-strong);
+    color: var(--ink-2);
+    border-radius: var(--radius-md);
+}
+
+.theme-toggle:hover {
+    color: var(--ink);
+    border-color: var(--ink-3);
+}
+
+/* Tab bar */
+.bottom-nav-item {
+    color: var(--ink-3);
+    font-family: var(--font-sans);
+}
+
+.bottom-nav-item.active {
+    color: var(--leaf);
+}
+
+.bottom-nav-item.active .bottom-nav-icon {
+    background: var(--leaf-tint);
+}
+
+.bottom-nav-item.primary .bottom-nav-icon {
+    border-radius: 14px;
+    margin-top: -22px;
+}
+
+/* Page headers: flat paper bar, Fraunces title */
+.chat-header,
+.weather-header,
+.calendar-header,
+.medicine-header,
+.pest-header,
+.history-header,
+.soil-header,
+.weather-page .weather-header,
+.calendar-page .calendar-header {
+    background: var(--paper) !important;
+}
+
+.medicine-header h2,
+.pest-header h2,
+.history-header h2,
+.weather-page .weather-header h2,
+.calendar-page .calendar-header h2,
+.soil-header h1,
+.chat-header .plant-name {
+    font-family: var(--font-display) !important;
+    font-weight: 600 !important;
+}
+
+.back-btn,
+.refresh-btn,
+.clear-btn,
+.add-btn,
+.report-btn {
+    background: var(--surface) !important;
+    border: 1px solid var(--hairline-strong) !important;
+    color: var(--ink) !important;
+    border-radius: var(--radius-md) !important;
+}
+
+/* Inputs */
+input[type="text"],
+input[type="search"],
+input:not([type]),
+textarea,
+select {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-md);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--ink-3);
+}
+
+/* Toasts: ink on paper inverse */
+.toast {
+    background: var(--ink) !important;
+    color: var(--paper) !important;
+    border: none !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-float) !important;
+    font-family: var(--font-sans);
+}
+
+.toast.error {
+    background: var(--terracotta) !important;
+    color: #fff !important;
+}
+
+/* Floating things get the single float shadow */
+.scanner-dock,
+.modal,
+.modal-content,
+.report-modal {
+    box-shadow: var(--shadow-float);
+}
+
+/* Shared notebook primitives for redesigned screens */
+.nb-overline {
+    font-family: var(--font-sans);
+    line-height: 1.3;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+}
+
+.nb-card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-lg);
+}
+
+.nb-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.nb-btn:active {
+    transform: translateY(1px);
+}
+
+.nb-btn-primary {
+    background: var(--leaf);
+    color: var(--on-leaf);
+}
+
+.nb-btn-primary:hover {
+    background: var(--leaf-strong);
+}
+
+.nb-btn-secondary {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--hairline-strong);
+}
+
+.nb-btn-secondary:hover {
+    border-color: var(--ink-3);
+}
+
+.nb-numeral {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums lining-nums;
+}

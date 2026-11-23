@@ -74,7 +74,7 @@ export async function analyzeHealth(imageInput, plantType = null, language = nul
     });
 }
 
-export async function chatWithPlant(message, plantType = 'Unknown', healthStatus = 'healthy', diseases = [], language = null) {
+export async function chatWithPlant(message, plantType = 'Unknown', healthStatus = 'healthy', diseases = [], language = null, history = []) {
     const lang = language || (typeof window !== 'undefined' ? localStorage.getItem('cropmagix-lang') : 'en') || 'en';
     return apiRequest('/api/chat', {
         method: 'POST',
@@ -83,7 +83,7 @@ export async function chatWithPlant(message, plantType = 'Unknown', healthStatus
             plant_type: plantType,
             health_status: healthStatus,
             diseases: diseases,
-            conversation_history: [],
+            conversation_history: history,
             language: lang
         })
     });

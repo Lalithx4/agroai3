@@ -528,82 +528,72 @@ Provide a helpful, practical response in 2-3 sentences. Be friendly and use simp
 }
 
 /**
- * AR Scanner - Quick plant identification with "wow factor" data
- * Designed for real-time AR overlay with visual-friendly compact info
+ * Live AR scan: one camera frame -> a short, honest read of the plant for the overlay.
+ * Runs every ~1.5 s while AR is on, so it uses the fast model and a small reply.
  */
+const AR_LANGUAGE = {
+    en: 'Write the text fields in plain, everyday English.',
+    hi: 'Write the text fields in everyday spoken Hindi (Devanagari), the way farmers talk. Keep plant_name in the common Hindi name if there is one.',
+    te: 'Write the text fields in everyday spoken Telugu (Telugu script), the way farmers talk. Keep plant_name in the common Telugu name if there is one.',
+};
+const AR_HINT = {
+    en: 'Point at one plant, a little closer',
+    hi: 'एक पौधे की ओर, थोड़ा पास से दिखाओ',
+    te: 'ఒక మొక్క వైపు, కొంచెం దగ్గరగా చూపించండి',
+};
+const EMOJI_RE = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu;
+const clean = (v) => (typeof v === 'string' ? v.replace(EMOJI_RE, '').trim() : v);
+const clamp01 = (n) => Math.max(0, Math.min(1, Number(n) || 0));
+
 export async function analyzeForAR(imageBase64, language = 'en') {
-    const languageInstructions = {
-        en: "Respond in English.",
-        hi: "Respond in Hindi.",
-        te: "Respond in Telugu."
-    };
+    const lang = AR_LANGUAGE[language] ? language : 'en';
+    const prompt = `This is one frame from a farmer's phone camera, pointed at a plant. Look at it like an experienced agronomist standing next to them.
+${AR_LANGUAGE[lang]}
 
-    const prompt = `You are an expert botanist with AR display capabilities. Identify this plant INSTANTLY and provide exciting, visual-friendly data for an AR overlay.
-
-${languageInstructions[language] || languageInstructions.en}
-
-Return ONLY this compact JSON - optimized for AR display:
+Reply ONLY with this JSON:
 {
-    "identified": true,
-    "plant_name": "Common Name",
-    "scientific_name": "Scientific name in italics style",
-    "emoji": "🌱",
-    "category": "Vegetable|Fruit|Flower|Herb|Tree|Succulent|Houseplant|Weed",
-    "health_score": 85,
-    "health_status": "excellent|healthy|fair|needs_attention|critical",
-    "health_emoji": "💚",
-    "quick_diagnosis": "One line health summary",
-    "fun_fact": "🎯 An amazing, surprising fact about this plant that will WOW the user!",
-    "origin_story": "🌍 Where this plant originally comes from",
-    "superpower": "✨ This plant's special ability (e.g., 'Purifies air 3x better than other plants!')",
-    "care_difficulty": "easy|moderate|expert",
-    "care_emoji": "🟢",
-    "instant_tip": "💡 One actionable care tip right now",
-    "water_need": "💧 Low|Medium|High",
-    "sun_need": "☀️ Full Sun|Partial Shade|Low Light",
-    "growth_speed": "🚀 Slow|Moderate|Fast",
-    "edible": true,
-    "edible_parts": "Fruits, leaves",
-    "toxic_warning": "⚠️ Toxic to pets" or null,
-    "season_info": "🗓️ Best season info",
-    "market_value": "💰 Approximate value or 'Priceless garden addition!'",
-    "companion_plants": ["🌿 Plant 1", "🌸 Plant 2"],
-    "pest_alert": "🐛 Watch for aphids" or null,
-    "next_action": "📋 Most important thing to do next",
-    "confidence": 0.95,
-    "scan_quality": "excellent|good|fair|poor"
+  "identified": true if a plant fills a reasonable part of the frame and you can name it, else false,
+  "plant_name": "common name",
+  "scientific_name": "Latin name or null",
+  "health_score": 0-100 (100 = completely healthy),
+  "health_status": "healthy" | "mild" | "needs_attention" | "serious",
+  "headline": "what you see, in under 10 words, like a person would say it (e.g. 'Young tomato, lower leaves turning yellow')",
+  "issue": "short plain name of the main problem, or null if healthy",
+  "tip": "one practical thing to do today, under 16 words, no brand names or doses",
+  "fact": "one short, true, specific fact a farmer would find useful about this plant, under 16 words, no hype",
+  "water": "low" | "medium" | "high",
+  "sun": "full sun" | "part shade" | "shade",
+  "confidence": 0-1,
+  "box": {"x": 0-1, "y": 0-1, "w": 0-1, "h": 0-1} = the main plant or leaf in the frame, measured from the top-left corner as fractions of width and height,
+  "hint": if identified is false, a short instruction to get a better view (e.g. "Move closer to one leaf"), else null
 }
-
-Make it EXCITING! Use vivid language. The fun_fact and superpower should make users say "Wow, I didn't know that!"
-If you cannot identify the plant, set identified: false and provide helpful guidance.
-Return ONLY valid JSON.`;
+Be honest: if the frame is blurry, dark or not a plant, set identified to false. Do not exaggerate problems on healthy plants. No emoji, no exclamation marks.`;
 
     try {
-        const arData = await askVision(prompt, imageBase64, 2048);
-        
-        // Add timestamp and AR display metadata
+        const r = await askVision(prompt, imageBase64, 500);
+        const box = r.box && typeof r.box === 'object'
+            ? { x: clamp01(r.box.x), y: clamp01(r.box.y), w: clamp01(r.box.w), h: clamp01(r.box.h) }
+            : null;
         return {
-            ...arData,
+            identified: !!r.identified,
+            plant_name: clean(r.plant_name) || null,
+            scientific_name: clean(r.scientific_name) || null,
+            health_score: Math.round(Math.max(0, Math.min(100, Number(r.health_score) || 0))),
+            health_status: ['healthy', 'mild', 'needs_attention', 'serious'].includes(r.health_status) ? r.health_status : 'mild',
+            headline: clean(r.headline) || null,
+            issue: clean(r.issue) || null,
+            tip: clean(r.tip) || null,
+            fact: clean(r.fact) || null,
+            water: clean(r.water) || null,
+            sun: clean(r.sun) || null,
+            confidence: clamp01(r.confidence),
+            box: box && box.w > 0.05 && box.h > 0.05 ? box : null,
+            hint: clean(r.hint) || (r.identified ? null : AR_HINT[lang]),
+            language: lang,
             timestamp: Date.now(),
-            display_mode: 'ar_overlay',
-            animation: arData.health_status === 'excellent' ? 'glow_green' : 
-                       arData.health_status === 'critical' ? 'pulse_red' : 'subtle_float'
         };
     } catch (error) {
-        console.error('AR scan error:', error);
-        return {
-            identified: false,
-            plant_name: 'Scanning...',
-            emoji: '🔍',
-            health_score: 0,
-            health_emoji: '❓',
-            quick_diagnosis: 'Point camera at a plant for identification',
-            fun_fact: '🌱 Plants can recognize their siblings!',
-            instant_tip: '💡 Move closer and ensure good lighting',
-            confidence: 0,
-            scan_quality: 'poor',
-            error: error.message,
-            animation: 'scanning'
-        };
+        console.error('AR scan error:', error.message);
+        return { identified: false, hint: AR_HINT[lang], error: error.message, language: lang, timestamp: Date.now() };
     }
 }

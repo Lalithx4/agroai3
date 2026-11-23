@@ -12,6 +12,7 @@ import {
     Loader2, Navigation, Sprout, Clock, TrendingUp, AlertTriangle, CheckCircle2,
     CloudDrizzle, Sunrise, Sunset, Eye, Gauge
 } from 'lucide-react';
+import { Info as NbInfo, AlertTriangle as NbAlert, Lightbulb as NbBulb, CheckCircle2 as NbCheck } from 'lucide-react';
 
 const weatherIcons = {
     clear: Sun, sunny: Sun, clouds: Cloud, cloudy: Cloud,
@@ -22,22 +23,22 @@ const weatherIcons = {
 // Regional crop database based on climate zones
 const REGIONAL_CROPS = {
     tropical: {
-        crops: ['🍚 Rice', '🌴 Coconut', '🍌 Banana', '🥭 Mango', '🌶️ Chili', '🫚 Ginger', '🫛 Sugarcane'],
+        crops: ['Rice', 'Coconut', 'Banana', 'Mango', 'Chili', 'Ginger', 'Sugarcane'],
         tempRange: '20-35°C',
         rainfall: 'High (150-300cm/year)'
     },
     subtropical: {
-        crops: ['🌾 Wheat', '🥔 Potato', '🧅 Onion', '🍅 Tomato', '🥜 Groundnut', '🌻 Sunflower', '🌿 Mustard'],
+        crops: ['Wheat', 'Potato', 'Onion', 'Tomato', 'Groundnut', 'Sunflower', 'Mustard'],
         tempRange: '15-28°C',
         rainfall: 'Moderate (75-150cm/year)'
     },
     arid: {
-        crops: ['🌵 Jowar', '🌾 Bajra', '🫘 Pulses', '🥜 Groundnut', '🫒 Castor', '🌿 Cumin', '🌰 Chickpea'],
+        crops: ['Jowar', 'Bajra', 'Pulses', 'Groundnut', 'Castor', 'Cumin', 'Chickpea'],
         tempRange: '25-45°C',
         rainfall: 'Low (<50cm/year)'
     },
     temperate: {
-        crops: ['🍎 Apple', '🍐 Pear', '🥬 Cabbage', '🥕 Carrot', '🧄 Garlic', '🥦 Broccoli', '🥗 Lettuce'],
+        crops: ['Apple', 'Pear', 'Cabbage', 'Carrot', 'Garlic', 'Broccoli', 'Lettuce'],
         tempRange: '10-25°C',
         rainfall: 'Moderate (50-100cm/year)'
     }
@@ -59,23 +60,30 @@ const getFarmingTips = (weather, climateZone) => {
     const condition = (weather?.condition || '').toLowerCase();
 
     if (condition.includes('rain')) {
-        tips.push({ icon: '🌧️', text: 'Postpone irrigation - natural rainfall expected', type: 'info' });
-        tips.push({ icon: '🔍', text: 'Check for waterlogging in fields', type: 'warning' });
+        tips.push({ icon: '', text: 'Postpone irrigation - natural rainfall expected', type: 'info' });
+        tips.push({ icon: '', text: 'Check for waterlogging in fields', type: 'warning' });
     } else if (temp > 35) {
-        tips.push({ icon: '🌡️', text: 'High temperature - increase watering frequency', type: 'warning' });
-        tips.push({ icon: '🕐', text: 'Water crops early morning (5-7 AM) or evening', type: 'tip' });
+        tips.push({ icon: '', text: 'High temperature - increase watering frequency', type: 'warning' });
+        tips.push({ icon: '', text: 'Water crops early morning (5-7 AM) or evening', type: 'tip' });
     } else if (humidity < 40) {
-        tips.push({ icon: '💧', text: 'Low humidity - monitor soil moisture closely', type: 'info' });
+        tips.push({ icon: '', text: 'Low humidity - monitor soil moisture closely', type: 'info' });
     }
 
     if (temp >= 25 && temp <= 32 && !condition.includes('rain')) {
-        tips.push({ icon: '✅', text: 'Ideal conditions for fertilizer application', type: 'success' });
+        tips.push({ icon: '', text: 'Ideal conditions for fertilizer application', type: 'success' });
     }
 
-    tips.push({ icon: '🐛', text: temp > 25 ? 'Warm weather - monitor for pest activity' : 'Cool weather - check for fungal diseases', type: 'tip' });
+    tips.push({ icon: '', text: temp > 25 ? 'Warm weather - monitor for pest activity' : 'Cool weather - check for fungal diseases', type: 'tip' });
 
     return tips;
 };
+
+
+const TIP_ICONS = { info: NbInfo, warning: NbAlert, tip: NbBulb, success: NbCheck };
+function TipIcon({ type }) {
+    const Icon = TIP_ICONS[type] || NbBulb;
+    return <span className="tip-icon" aria-hidden="true"><Icon size={18} /></span>;
+}
 
 export default function WeatherPage() {
     const { t } = useLanguage();
@@ -122,7 +130,7 @@ export default function WeatherPage() {
                 latitude = position.coords.latitude;
                 longitude = position.coords.longitude;
                 setCoords({ lat: latitude, lng: longitude });
-                showToast('📍 Location detected!', 'success');
+                showToast('Location detected!', 'success');
             } catch (locError) {
                 showToast('Using default location (Hyderabad)', 'info');
             }
@@ -212,9 +220,9 @@ export default function WeatherPage() {
     };
 
     const getScoreColor = (score) => {
-        if (score >= 80) return '#10b981';
-        if (score >= 60) return '#f59e0b';
-        return '#ef4444';
+        if (score >= 80) return 'var(--leaf)';
+        if (score >= 60) return 'var(--amber)';
+        return 'var(--terracotta)';
     };
 
     if (loading) {
@@ -222,7 +230,7 @@ export default function WeatherPage() {
             <section className="screen active weather-page">
                 <div className="weather-header">
                     <BackButton />
-                    <h2>☀️ {t('weatherForecast')}</h2>
+                    <h2>{t('weatherForecast')}</h2>
                 </div>
                 <div className="loading-container">
                     <div className="loading-animation">
@@ -247,7 +255,7 @@ export default function WeatherPage() {
         <section className="screen active weather-page">
             <div className="weather-header">
                 <BackButton />
-                <h2>☀️ {t('weatherForecast')}</h2>
+                <h2>{t('weatherForecast')}</h2>
                 <button className="refresh-btn" onClick={() => loadWeather(true)} title="Refresh">
                     <RefreshCw size={18} />
                 </button>
@@ -352,7 +360,7 @@ export default function WeatherPage() {
                         </div>
                         <div className="score-details">
                             <span className="score-status" style={{ color: getScoreColor(farmScore) }}>
-                                {farmScore >= 80 ? '✨ Excellent' : farmScore >= 60 ? '👍 Good' : '⚠️ Fair'}
+                                {farmScore >= 80 ? 'Excellent' : farmScore >= 60 ? 'Good' : 'Fair'}
                             </span>
                             <span className="climate-badge">{climateZone.charAt(0).toUpperCase() + climateZone.slice(1)} Climate</span>
                         </div>
@@ -397,26 +405,26 @@ export default function WeatherPage() {
                 <div className="tips-section">
                     <div className="section-header">
                         <Lightbulb size={20} />
-                        <h4>Today's Farming Tips</h4>
+                        <h4>Today&apos;s Farming Tips</h4>
                     </div>
                     <div className="tips-list">
                         {tips.length > 0 ? tips.map((tip, idx) => (
                             <div key={idx} className={`tip-card ${tip.type}`}>
-                                <span className="tip-icon">{tip.icon}</span>
+                                <TipIcon type={tip.type} />
                                 <span className="tip-text">{tip.text}</span>
                             </div>
                         )) : (
                             <>
                                 <div className="tip-card tip">
-                                    <span className="tip-icon">💧</span>
+                                    <TipIcon type="tip" />
                                     <span className="tip-text">Water plants early morning for best absorption</span>
                                 </div>
                                 <div className="tip-card success">
-                                    <span className="tip-icon">✅</span>
+                                    <TipIcon type="success" />
                                     <span className="tip-text">Good conditions for fertilizer application</span>
                                 </div>
                                 <div className="tip-card warning">
-                                    <span className="tip-icon">🐛</span>
+                                    <TipIcon type="warning" />
                                     <span className="tip-text">Monitor for pest activity in warm weather</span>
                                 </div>
                             </>

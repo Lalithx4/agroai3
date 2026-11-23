@@ -8,6 +8,7 @@ import { analyzeHealth } from '@/services/api';
 import { addScanToHistory } from '@/services/cache';
 import { saveScanHistory } from '@/lib/supabase';
 import './scanner.css';
+import ArOverlay from './ArOverlay';
 import {
     ArrowLeft,
     FolderOpen,
@@ -37,15 +38,32 @@ import {
     HelpCircle,
     Stethoscope
 } from 'lucide-react';
+import { Sprout as NbSprout, Info as NbInfo, Target as NbTarget } from 'lucide-react';
+
+
+// Below 70% the accuracy ladder found answers unreliable, so we say so plainly.
+const UNSURE_BELOW = 70;
+function scanVerdict(r) {
+    const issue = r.diagnosis?.primary_issue || r.diseases?.[0]?.name || '';
+    if (r.confidence != null && r.confidence < UNSURE_BELOW) {
+        return { cls: 'unsure', Icon: HelpCircle, title: 'Not sure yet', sub: `${issue ? `It may be ${issue.toLowerCase()}. ` : ''}Take another photo in daylight, closer to the leaf, or show it to your agriculture officer.` };
+    }
+    if (r.health_status === 'healthy') {
+        return { cls: 'healthy', Icon: CheckCircle, title: 'Looks healthy', sub: 'Keep checking the plant every few days.' };
+    }
+    if (r.health_status === 'critical') {
+        return { cls: 'serious', Icon: AlertTriangle, title: 'Serious problem', sub: `${issue ? `Likely ${issue.toLowerCase()}. ` : ''}Show this to your agriculture officer soon.` };
+    }
+    return { cls: 'care', Icon: AlertTriangle, title: 'Needs care', sub: issue ? `Likely ${issue.toLowerCase()}. The treatment is below.` : 'The details and treatment are below.' };
+}
 
 export default function ScannerPage() {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { showToast } = useToast();
     const router = useRouter();
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const fileInputRef = useRef(null);
-    const arIntervalRef = useRef(null);
     const [stream, setStream] = useState(null);
     const [isFlashOn, setIsFlashOn] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -54,92 +72,17 @@ export default function ScannerPage() {
     const [cameraError, setCameraError] = useState(false);
     const [isCapturing, setIsCapturing] = useState(false);
     
-    // AR Mode State
+    // AR mode: the live overlay runs its own scan loop (ArOverlay.jsx)
     const [isARMode, setIsARMode] = useState(false);
-    const [arData, setArData] = useState(null);
-    const [arScanning, setArScanning] = useState(false);
-    const [arError, setArError] = useState(null);
 
     useEffect(() => {
         startCamera();
         return () => { 
             stream?.getTracks().forEach(track => track.stop());
-            if (arIntervalRef.current) clearInterval(arIntervalRef.current);
         };
     }, []);
 
-    // AR Mode auto-scanning
-    useEffect(() => {
-        if (isARMode && !cameraError) {
-            // Start AR scanning every 3 seconds
-            arIntervalRef.current = setInterval(() => {
-                performARScan();
-            }, 3000);
-            // Initial scan
-            performARScan();
-        } else {
-            if (arIntervalRef.current) {
-                clearInterval(arIntervalRef.current);
-                arIntervalRef.current = null;
-            }
-        }
-        return () => {
-            if (arIntervalRef.current) clearInterval(arIntervalRef.current);
-        };
-    }, [isARMode, cameraError]);
-
-    const performARScan = async () => {
-        if (!videoRef.current || !canvasRef.current || arScanning) return;
-        
-        setArScanning(true);
-        setArError(null);
-        
-        try {
-            const canvas = canvasRef.current;
-            const video = videoRef.current;
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            
-            const blob = await new Promise(resolve => 
-                canvas.toBlob(resolve, 'image/jpeg', 0.7)
-            );
-            
-            const formData = new FormData();
-            formData.append('image', blob);
-            formData.append('language', 'en');
-            
-            const response = await fetch('/api/ar-scan', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const data = await response.json();
-            
-            if (data.identified) {
-                setArData(data);
-                setArError(null);
-            } else {
-                setArData(null);
-                setArError('Point at a plant');
-            }
-        } catch (error) {
-            console.error('AR scan error:', error);
-            setArError('Scanning...');
-        } finally {
-            setArScanning(false);
-        }
-    };
-
-    const toggleARMode = () => {
-        setIsARMode(!isARMode);
-        if (!isARMode) {
-            showToast('🔮 AR Mode Activated! Point at a plant', 'success');
-        } else {
-            setArData(null);
-            setArError(null);
-        }
-    };
+    const toggleARMode = () => setIsARMode((on) => !on);
 
     const startCamera = async () => {
         try {
@@ -265,7 +208,7 @@ export default function ScannerPage() {
 
                 <div className="scanner-status-pill">
                     <span className={`status-dot ${isAnalyzing ? 'analyzing' : isARMode ? 'ar-active' : ''}`} />
-                    <span>{isAnalyzing ? 'Analyzing...' : isARMode ? '🔮 AR Mode' : 'Ready to Scan'}</span>
+                    <span>{isAnalyzing ? 'Analyzing…' : isARMode ? 'Live view' : 'Ready to scan'}</span>
                 </div>
 
                 <button 
@@ -277,121 +220,13 @@ export default function ScannerPage() {
                 </button>
             </div>
 
-            {/* AR Mode Overlay */}
-            {isARMode && (
-                <div className={`ar-overlay ${arData ? 'has-data' : ''}`}>
-                    {/* AR Scanning Indicator */}
-                    <div className={`ar-scanner-beam ${arScanning ? 'scanning' : ''}`} />
-                    
-                    {/* AR Corner Markers */}
-                    <div className="ar-corners">
-                        <div className="ar-corner top-left" />
-                        <div className="ar-corner top-right" />
-                        <div className="ar-corner bottom-left" />
-                        <div className="ar-corner bottom-right" />
-                    </div>
-
-                    {/* AR Status */}
-                    <div className="ar-status-badge">
-                        {arScanning ? (
-                            <>
-                                <Loader2 size={16} className="spin" />
-                                <span>Scanning...</span>
-                            </>
-                        ) : arData ? (
-                            <>
-                                <Sparkles size={16} />
-                                <span>Plant Found!</span>
-                            </>
-                        ) : (
-                            <>
-                                <ScanLine size={16} />
-                                <span>{arError || 'Point at a plant'}</span>
-                            </>
-                        )}
-                    </div>
-
-                    {/* AR Data Cards - The WOW Factor! */}
-                    {arData && (
-                        <div className={`ar-info-container ${arData.animation}`}>
-                            {/* Main Plant Card - Floating */}
-                            <div className="ar-main-card">
-                                <div className="ar-card-glow" />
-                                <div className="ar-plant-header">
-                                    <span className="ar-plant-emoji">{arData.emoji}</span>
-                                    <div className="ar-plant-names">
-                                        <h2>{arData.plant_name}</h2>
-                                        <span className="ar-scientific">{arData.scientific_name}</span>
-                                    </div>
-                                </div>
-                                
-                                {/* Health Score Ring */}
-                                <div className="ar-health-ring">
-                                    <svg viewBox="0 0 60 60">
-                                        <circle className="ar-ring-bg" cx="30" cy="30" r="26" />
-                                        <circle 
-                                            className="ar-ring-fill" 
-                                            cx="30" cy="30" r="26"
-                                            style={{ 
-                                                strokeDashoffset: 163.36 - (163.36 * (arData.health_score / 100)),
-                                                stroke: arData.health_score > 70 ? '#10b981' : 
-                                                       arData.health_score > 40 ? '#f59e0b' : '#ef4444'
-                                            }}
-                                        />
-                                    </svg>
-                                    <span className="ar-health-value">{arData.health_score}</span>
-                                    <span className="ar-health-emoji">{arData.health_emoji}</span>
-                                </div>
-                                
-                                <p className="ar-diagnosis">{arData.quick_diagnosis}</p>
-                            </div>
-
-                            {/* Fun Fact Card - Animated */}
-                            <div className="ar-fact-card ar-float-1">
-                                <div className="ar-fact-icon">✨</div>
-                                <p>{arData.superpower}</p>
-                            </div>
-
-                            {/* Fun Fact 2 */}
-                            <div className="ar-fact-card ar-float-2">
-                                <div className="ar-fact-icon">🎯</div>
-                                <p>{arData.fun_fact}</p>
-                            </div>
-
-                            {/* Care Quick Stats */}
-                            <div className="ar-stats-row">
-                                <div className="ar-stat">
-                                    <span>{arData.water_need || '💧 Medium'}</span>
-                                </div>
-                                <div className="ar-stat">
-                                    <span>{arData.sun_need || '☀️ Full Sun'}</span>
-                                </div>
-                                <div className="ar-stat">
-                                    <span>{arData.care_emoji} {arData.care_difficulty}</span>
-                                </div>
-                            </div>
-
-                            {/* Instant Tip */}
-                            <div className="ar-tip-card">
-                                <Lightbulb size={18} />
-                                <p>{arData.instant_tip}</p>
-                            </div>
-
-                            {/* Warning if any */}
-                            {arData.toxic_warning && (
-                                <div className="ar-warning-card">
-                                    <AlertTriangle size={16} />
-                                    <span>{arData.toxic_warning}</span>
-                                </div>
-                            )}
-
-                            {/* Confidence Badge */}
-                            <div className="ar-confidence">
-                                <span>{Math.round((arData.confidence || 0.9) * 100)}% confident</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
+            {/* Live AR overlay */}
+            {isARMode && !cameraError && (
+                <ArOverlay
+                    videoRef={videoRef}
+                    language={language}
+                    onFullReport={() => { setIsARMode(false); captureImage(); }}
+                />
             )}
 
             {/* Scanning Focus Ring - Modified for AR */}
@@ -443,8 +278,8 @@ export default function ScannerPage() {
                     className={`dock-btn ${isARMode ? 'active' : ''}`}
                     onClick={toggleARMode}
                 >
-                    <Sparkles size={24} />
-                    <span>AR</span>
+                    <Eye size={24} />
+                    <span>Live</span>
                 </button>
             </div>
 
@@ -471,7 +306,7 @@ export default function ScannerPage() {
             {/* Result Panel - COMPREHENSIVE */}
             <div className={`result-panel ${analysisResult ? 'open' : ''}`}>
                 <div className="result-panel-header">
-                    <h2>🌿 Plant Analysis Report</h2>
+                    <h2>Plant Analysis Report</h2>
                     <button className="result-close-btn" onClick={closeResult}>
                         <X size={22} />
                     </button>
@@ -491,7 +326,7 @@ export default function ScannerPage() {
                             {/* Plant Identity Card */}
                             <div className="bento-card full-width plant-identity">
                                 <div className="plant-identity-header">
-                                    <div className="plant-emoji-large">🌱</div>
+                                    <div className="plant-emoji-large" aria-hidden="true"><NbSprout size={28} /></div>
                                     <div className="plant-names">
                                         <h3>{analysisResult.plant_type || analysisResult.plant_name || 'Unknown Plant'}</h3>
                                         {analysisResult.plant_species && (
@@ -510,52 +345,37 @@ export default function ScannerPage() {
                                 )}
                             </div>
 
-                            {/* Health Status Card */}
-                            <div className={`bento-card full-width health-status ${
-                                analysisResult.health_status === 'healthy' ? 'healthy' : 
-                                analysisResult.health_status === 'critical' ? 'critical' : 'warning'
-                            }`}>
-                                <div className={`health-badge ${analysisResult.health_status !== 'healthy' ? 'warning' : ''}`}>
-                                    {analysisResult.health_status === 'healthy' ? (
-                                        <CheckCircle size={18} />
-                                    ) : (
-                                        <AlertTriangle size={18} />
-                                    )}
-                                    {analysisResult.health_status === 'healthy' ? 'Healthy Plant' : 
-                                     analysisResult.health_status === 'critical' ? '⚠️ Critical - Needs Immediate Care' :
-                                     'Issues Detected'}
-                                </div>
-
-                                <div className="confidence-display">
-                                    <div className="confidence-circle">
-                                        <svg viewBox="0 0 80 80">
-                                            <circle className="bg" cx="40" cy="40" r="36" />
-                                            <circle
-                                                className="fill"
-                                                cx="40"
-                                                cy="40"
-                                                r="36"
-                                                style={{
-                                                    strokeDashoffset: 226 - (226 * ((analysisResult.confidence || 85) / 100))
-                                                }}
-                                            />
-                                        </svg>
-                                        <span className="confidence-value">
-                                            {Math.round(analysisResult.confidence || 85)}%
-                                        </span>
+                            {/* Verdict (EXPERIENCE.md State Patterns): shown before any detail */}
+                            {(() => {
+                                const v = scanVerdict(analysisResult);
+                                const conf = Math.round(analysisResult.confidence ?? 0);
+                                return (
+                                    <div className={`bento-card full-width scan-verdict ${v.cls}`} role="status" aria-live="polite">
+                                        <div className="scan-verdict-head">
+                                            <v.Icon size={30} strokeWidth={2} aria-hidden="true" />
+                                            <div>
+                                                <h3>{v.title}</h3>
+                                                <p>{v.sub}</p>
+                                            </div>
+                                        </div>
+                                        {analysisResult.confidence != null && (
+                                            <div className="scan-confidence">
+                                                <div className="scan-confidence-bar" aria-hidden="true">
+                                                    <span style={{ width: `${Math.min(100, Math.max(0, conf))}%` }} />
+                                                </div>
+                                                <span className="scan-confidence-num">About {conf}% sure</span>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="plant-info">
-                                        <p>Confidence Score</p>
-                                    </div>
-                                </div>
-                            </div>
+                                );
+                            })()}
 
                             {/* Summary Card */}
                             {analysisResult.summary && (
                                 <div className="bento-card full-width summary-card">
                                     <div className="bento-card-header">
                                         <Info size={20} />
-                                        <h4>📋 Summary</h4>
+                                        <h4>Summary</h4>
                                     </div>
                                     <p className="summary-text">{analysisResult.summary}</p>
                                 </div>
@@ -566,7 +386,7 @@ export default function ScannerPage() {
                                 <div className="bento-card full-width diagnosis-card">
                                     <div className="bento-card-header">
                                         <Stethoscope size={20} />
-                                        <h4>🔬 Diagnosis</h4>
+                                        <h4>Diagnosis</h4>
                                     </div>
                                     <div className="diagnosis-content">
                                         <div className="diagnosis-primary">
@@ -591,7 +411,7 @@ export default function ScannerPage() {
                                 <div className="bento-card full-width diseases-card">
                                     <div className="bento-card-header">
                                         <Bug size={20} />
-                                        <h4>🦠 Detected Diseases</h4>
+                                        <h4>Detected Diseases</h4>
                                     </div>
                                     <div className="disease-list">
                                         {analysisResult.diseases.map((d, i) => (
@@ -620,13 +440,13 @@ export default function ScannerPage() {
                                 <div className="bento-card full-width causes-card">
                                     <div className="bento-card-header">
                                         <HelpCircle size={20} />
-                                        <h4>❓ Why This Happened</h4>
+                                        <h4>Why This Happened</h4>
                                     </div>
                                     <div className="causes-list">
                                         {analysisResult.causes.map((cause, i) => (
                                             <div key={i} className="cause-item">
                                                 <div className="cause-header">
-                                                    <span className="cause-factor">⚡ {cause.factor}</span>
+                                                    <span className="cause-factor">{cause.factor}</span>
                                                     <span className={`cause-likelihood ${cause.likelihood}`}>
                                                         {cause.likelihood} likelihood
                                                     </span>
@@ -648,12 +468,12 @@ export default function ScannerPage() {
                                 <div className="bento-card full-width treatment-card">
                                     <div className="bento-card-header">
                                         <Activity size={20} />
-                                        <h4>💊 Treatment Plan</h4>
+                                        <h4>Treatment Plan</h4>
                                     </div>
                                     <div className="treatment-sections">
                                         {analysisResult.treatment_plan.immediate?.length > 0 && (
                                             <div className="treatment-section urgent">
-                                                <h5>🚨 Immediate (Today)</h5>
+                                                <h5>Immediate (Today)</h5>
                                                 <ul>
                                                     {analysisResult.treatment_plan.immediate.map((item, i) => (
                                                         <li key={i}>{item}</li>
@@ -663,7 +483,7 @@ export default function ScannerPage() {
                                         )}
                                         {analysisResult.treatment_plan.daily?.length > 0 && (
                                             <div className="treatment-section daily">
-                                                <h5>📅 Daily Care</h5>
+                                                <h5>Daily Care</h5>
                                                 <ul>
                                                     {analysisResult.treatment_plan.daily.map((item, i) => (
                                                         <li key={i}>{item}</li>
@@ -673,7 +493,7 @@ export default function ScannerPage() {
                                         )}
                                         {analysisResult.treatment_plan.weekly?.length > 0 && (
                                             <div className="treatment-section weekly">
-                                                <h5>📆 Weekly Care</h5>
+                                                <h5>Weekly Care</h5>
                                                 <ul>
                                                     {analysisResult.treatment_plan.weekly.map((item, i) => (
                                                         <li key={i}>{item}</li>
@@ -683,7 +503,7 @@ export default function ScannerPage() {
                                         )}
                                         {analysisResult.treatment_plan.long_term?.length > 0 && (
                                             <div className="treatment-section longterm">
-                                                <h5>🎯 Long-term Strategy</h5>
+                                                <h5>Long-term Strategy</h5>
                                                 <ul>
                                                     {analysisResult.treatment_plan.long_term.map((item, i) => (
                                                         <li key={i}>{item}</li>
@@ -700,7 +520,7 @@ export default function ScannerPage() {
                                 <div className="bento-card full-width fertilizer-card">
                                     <div className="bento-card-header">
                                         <FlaskConical size={20} />
-                                        <h4>🧪 Fertilizer Recommendations</h4>
+                                        <h4>Fertilizer Recommendations</h4>
                                     </div>
                                     <div className="fertilizer-list">
                                         {analysisResult.fertilizer_recommendations.map((fert, i) => (
@@ -712,7 +532,7 @@ export default function ScannerPage() {
                                                 {fert.dosage && <p><strong>Dosage:</strong> {fert.dosage}</p>}
                                                 {fert.frequency && <p><strong>Frequency:</strong> {fert.frequency}</p>}
                                                 {fert.organic_alternative && (
-                                                    <p className="organic-alt">🌿 Organic: {fert.organic_alternative}</p>
+                                                    <p className="organic-alt">Organic: {fert.organic_alternative}</p>
                                                 )}
                                             </div>
                                         ))}
@@ -725,7 +545,7 @@ export default function ScannerPage() {
                                 <div className="bento-card full-width organic-card">
                                     <div className="bento-card-header">
                                         <Leaf size={20} />
-                                        <h4>🌿 Organic Remedies</h4>
+                                        <h4>Organic Remedies</h4>
                                     </div>
                                     <div className="organic-list">
                                         {analysisResult.organic_remedies.map((remedy, i) => (
@@ -745,7 +565,7 @@ export default function ScannerPage() {
                                 <div className="bento-card full-width conditions-card">
                                     <div className="bento-card-header">
                                         <Sun size={20} />
-                                        <h4>☀️ Ideal Growing Conditions</h4>
+                                        <h4>Ideal Growing Conditions</h4>
                                     </div>
                                     <div className="conditions-grid">
                                         {analysisResult.ideal_conditions.temperature_optimal && (
@@ -781,7 +601,7 @@ export default function ScannerPage() {
                                 <div className="bento-card full-width watering-card">
                                     <div className="bento-card-header">
                                         <Droplets size={20} />
-                                        <h4>💧 Watering Guide</h4>
+                                        <h4>Watering Guide</h4>
                                     </div>
                                     <div className="watering-info">
                                         {analysisResult.watering_schedule.frequency && (
@@ -791,7 +611,7 @@ export default function ScannerPage() {
                                             <p><strong>Best Time:</strong> {analysisResult.watering_schedule.best_time}</p>
                                         )}
                                         {analysisResult.watering_schedule.current_recommendation && (
-                                            <p className="current-rec">💡 {analysisResult.watering_schedule.current_recommendation}</p>
+                                            <p className="current-rec">{analysisResult.watering_schedule.current_recommendation}</p>
                                         )}
                                     </div>
                                 </div>
@@ -802,7 +622,7 @@ export default function ScannerPage() {
                                 <div className="bento-card full-width tips-card">
                                     <div className="bento-card-header">
                                         <Lightbulb size={20} />
-                                        <h4>💡 Quick Tips</h4>
+                                        <h4>Quick Tips</h4>
                                     </div>
                                     <div className="quick-tips-grid">
                                         {analysisResult.quick_tips.map((tip, i) => (
@@ -823,7 +643,7 @@ export default function ScannerPage() {
                                 <div className="bento-card full-width recommendations-card">
                                     <div className="bento-card-header">
                                         <CheckCircle size={20} />
-                                        <h4>✅ Top Recommendations</h4>
+                                        <h4>Top Recommendations</h4>
                                     </div>
                                     <div className="tips-list">
                                         {analysisResult.recommendations.map((tip, i) => {

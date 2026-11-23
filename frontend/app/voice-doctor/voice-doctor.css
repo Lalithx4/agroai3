@@ -1,37 +1,429 @@
-.vd{max-width:760px;margin:0 auto;padding:12px 14px 90px}
-.vd-card{color:#16301f}
-.vd h1{font-size:22px;margin:6px 0 2px}
-.vd .sub{opacity:.8;font-size:14px;margin:0 0 12px}
-.vd-card{background:#fff;border:1px solid #d6e8d0;border-radius:18px;padding:12px;margin-bottom:12px;box-shadow:0 3px 12px rgba(0,0,0,.05)}
-.vd-chips{display:flex;gap:8px;flex-wrap:wrap}
-.vd-chip{border:2px solid #1f7a4d;background:#fff;color:#0f3d28;border-radius:99px;padding:6px 14px;font-weight:700;cursor:pointer;font-size:14px}
-.vd-chip.on{background:#1f7a4d;color:#fff}
-.vd label.small{display:block;font-size:12px;font-weight:700;margin:8px 0 4px;color:#3d5a46}
-.vd select{width:100%;padding:9px;border:1px solid #cfe3c6;border-radius:10px;font:inherit;background:#fbfff8}
-.vd-stage{position:relative;background:#101a14;border-radius:14px;overflow:hidden;min-height:220px}
-.vd-stage canvas{display:none;width:100%;touch-action:none;cursor:grab}
-.vd-empty{padding:46px 16px;text-align:center;color:#cfe8d6}
-.vd-empty b{font-size:19px;display:block;margin-bottom:6px;color:#fff}
-.vd-badge{position:absolute;top:10px;left:10px;background:rgba(15,61,40,.9);color:#fff;font-size:11px;padding:3px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.05em}
-.vd-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.vd-btn{border:0;border-radius:14px;padding:12px 16px;background:#1f7a4d;color:#fff;font-weight:800;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-.vd-btn.alt{background:#fff;color:#0f3d28;border:2px solid #1f7a4d;padding:10px 14px}
-.vd-btn.rec{background:#d94b3d}
-.vd-btn.big{width:100%;justify-content:center;padding:15px;font-size:17px}
-.vd-btn:disabled{opacity:.45;cursor:not-allowed}
-.vd-btn:focus-visible,.vd-chip:focus-visible,.vd select:focus-visible{outline:3px solid #ffbf3c;outline-offset:2px}
-.vd-note{font-size:12.5px;color:#5b6f61;margin-top:8px;line-height:1.45}
-.vd-warn{background:#fff4d9;color:#6a4a00;border-radius:10px;padding:8px 10px;font-size:13px;margin-top:8px}
-.vd-light{display:flex;align-items:center;gap:12px;border-radius:14px;padding:12px;color:#fff}
-.vd-light .dot{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:24px}
-.vd-light.green{background:#1f8a4c}.vd-light.amber{background:#c98a0a}.vd-light.red{background:#c0392b}.vd-light.grey{background:#5d6b63}
-.vd-light h2{margin:0;font-size:18px}.vd-light p{margin:2px 0 0;font-size:13px;opacity:.95}
-.vd-says{margin:10px 0 0;padding:0;list-style:none}
-.vd-says li{padding:8px 10px;border-radius:10px;background:#f1f8ec;margin-bottom:6px;font-size:16px;font-weight:600}
-.vd-says li.now{background:#dff3e3;outline:2px solid #1f7a4d}
-.vd-meta{font-size:12px;color:#5b6f61;margin-top:6px}
-.vd-caption{text-align:center;font-weight:700;color:#0f3d28;min-height:26px;margin-top:8px}
-.vd .spin{animation:vdspin 1s linear infinite}
-@keyframes vdspin{to{transform:rotate(360deg)}}
-.vd .spin{animation:vdspin 1s linear infinite}
-@keyframes vdspin{to{transform:rotate(360deg)}}
+/* Voice Doctor: uses the shared theme tokens so it matches dark and light mode */
+.vd {
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 16px var(--gutter, 16px) 24px;
+    color: var(--text-primary);
+}
+
+.vd-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.vd-head-icon {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    color: var(--leaf);
+    background: var(--leaf-tint);
+}
+
+.vd h1 {
+    font-size: clamp(1.3rem, 3vw, 1.6rem);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.vd .sub {
+    margin: 2px 0 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+/* Phones: one column. Tablets/desktop: stage on the left, controls + answer on the right. */
+.vd-layout {
+    display: grid;
+    gap: 14px;
+}
+
+.vd-side {
+    display: grid;
+    gap: 14px;
+    align-content: start;
+}
+
+@media (min-width: 900px) {
+    .vd-layout {
+        grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr);
+        align-items: start;
+    }
+
+    .vd-stage-card {
+        position: sticky;
+        top: calc(var(--header-h, 60px) + 16px);
+    }
+}
+
+.vd-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+}
+
+.vd-card-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+}
+
+.vd-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.vd-chip {
+    min-height: 40px;
+    border: 1px solid var(--hairline-strong);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: var(--radius-sm);
+    padding: 6px 16px;
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.vd-chip:hover {
+    color: var(--text-primary);
+}
+
+.vd-chip.on {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+}
+
+.vd label.small {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 14px 0 6px;
+    color: var(--text-secondary);
+}
+
+.vd select {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    font: inherit;
+    color: var(--text-primary);
+    background: var(--surface);
+    cursor: pointer;
+}
+
+.vd-stage {
+    position: relative;
+    background: var(--sunken);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--hairline);
+    overflow: hidden;
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (min-width: 900px) {
+    .vd-stage {
+        min-height: 380px;
+    }
+}
+
+.vd-stage canvas {
+    display: none;
+    width: 100%;
+    touch-action: none;
+    cursor: grab;
+}
+
+.vd-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--ink-2);
+    font-size: 0.9rem;
+}
+
+.vd-empty-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 14px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    color: var(--leaf);
+}
+
+.vd-empty b {
+    font-size: 1.15rem;
+    display: block;
+    margin-bottom: 4px;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-weight: 600;
+}
+
+.vd-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--hairline-strong);
+    color: var(--ink);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 99px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.vd-badge::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--leaf);
+}
+
+.vd-badge.listening::before { background: var(--terracotta); animation: vdpulse 1s ease-in-out infinite; }
+.vd-badge.thinking::before { background: var(--turmeric); animation: vdpulse 1s ease-in-out infinite; }
+.vd-badge.speaking::before { background: var(--sky); animation: vdpulse 0.7s ease-in-out infinite; }
+
+@keyframes vdpulse {
+    50% { opacity: 0.3; }
+}
+
+.vd-caption {
+    text-align: center;
+    font-weight: 700;
+    color: var(--text-primary);
+    min-height: 24px;
+    margin-top: 10px;
+}
+
+.vd-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.vd-row + .vd-row {
+    margin-top: 10px;
+}
+
+.vd-row > .vd-btn:not(.big) {
+    flex: 1 1 140px;
+}
+
+.vd-btn {
+    min-height: 48px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    background: var(--leaf);
+    color: var(--on-leaf);
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.15s, opacity 0.2s, background 0.2s;
+}
+
+.vd-btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.vd-btn.alt {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--hairline-strong);
+}
+
+.vd-btn.rec {
+    background: var(--terracotta);
+    border-color: var(--terracotta);
+    color: #FFFDF8;
+}
+
+.vd-btn.big {
+    width: 100%;
+    min-height: 56px;
+    font-size: 1.05rem;
+}
+
+.vd-btn:disabled {
+    background: var(--sunken);
+    color: var(--ink-3);
+    border-color: var(--hairline);
+    cursor: not-allowed;
+}
+
+.vd-btn:focus-visible,
+.vd-chip:focus-visible,
+.vd select:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.vd-note {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 10px;
+    line-height: 1.45;
+}
+
+.vd-warn,
+.vd-error {
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 0.88rem;
+    margin-top: 10px;
+    line-height: 1.45;
+    color: var(--ink);
+    border-left: 4px solid;
+}
+
+.vd-warn {
+    background: var(--amber-tint);
+    border-color: var(--amber);
+}
+
+.vd-error {
+    background: var(--terracotta-tint);
+    border-color: var(--terracotta);
+}
+
+/* Verdict block (DESIGN.md Components): tint + 4px rule + icon + Fraunces title */
+.vd-light {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    color: var(--ink);
+    border-left: 4px solid;
+}
+
+.vd-light .dot {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vd-light.green { background: var(--leaf-tint); border-color: var(--leaf); }
+.vd-light.green .dot { color: var(--leaf); }
+.vd-light.amber { background: var(--amber-tint); border-color: var(--amber); }
+.vd-light.amber .dot { color: var(--amber); }
+.vd-light.red { background: var(--terracotta-tint); border-color: var(--terracotta); }
+.vd-light.red .dot { color: var(--terracotta); }
+.vd-light.grey { background: var(--sunken); border-color: var(--ink-2); }
+.vd-light.grey .dot { color: var(--ink-2); }
+
+.vd-light h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    color: var(--ink);
+}
+
+.vd-light p {
+    margin: 2px 0 0;
+    font-size: 0.9rem;
+    color: var(--ink-2);
+}
+
+.vd-says {
+    margin: 12px 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+}
+
+.vd-says li {
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--sunken);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.45;
+    border: 1px solid transparent;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.vd-says li.now {
+    background: var(--leaf-tint);
+    border-color: var(--leaf);
+}
+
+.vd-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 8px;
+    line-height: 1.5;
+}
+
+.vd-meta b {
+    color: var(--text-secondary);
+}
+
+.vd .spin {
+    animation: vdspin 1s linear infinite;
+}
+
+@keyframes vdspin {
+    to { transform: rotate(360deg); }
+}
+
+/* Result arrives like a reply: verdict first, then each spoken line, one after another */
+.vd-result .vd-light {
+    animation: vd-rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.vd-result .vd-says li {
+    animation: vd-rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(0.15s + var(--i, 0) * 0.12s);
+}
+
+.vd-says li.now {
+    transform: translateX(2px);
+}
+
+@keyframes vd-rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+
+.vd-caption {
+    transition: opacity 0.25s;
+}

@@ -2,6 +2,9 @@
 const nextConfig = {
   // Enable React strict mode for better development
   reactStrictMode: true,
+
+  // Hide the Next.js dev-tools indicator button in development
+  devIndicators: false,
   
   // Image optimization with remotePatterns (new format)
   images: {

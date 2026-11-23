@@ -25,15 +25,24 @@ const LANGUAGE_NAMES = { en: 'English', hi: 'Hindi', te: 'Telugu' };
 
 // Spoken when the guard fires. Hindi and Telugu lines should be checked by a native speaker.
 const NOT_SURE = {
-  en: 'I am not completely sure. Please take another photo, or ask the agriculture officer.',
-  hi: 'मुझे पूरा यकीन नहीं है। कृपया दूसरी तस्वीर लें या कृषि अधिकारी से पूछें।',
-  te: 'నాకు పూర్తిగా నమ్మకం లేదు. దయచేసి మరో ఫోటో తీయండి లేదా వ్యవసాయ అధికారిని అడగండి.',
+  en: "I can't tell for sure from this photo. Could you take one more, closer to my leaf, in daylight? Or show me to the agriculture officer.",
+  hi: 'इस फोटो से मैं पक्का नहीं कह सकता। दिन की रोशनी में मेरे पत्ते की एक और फोटो पास से लो, या कृषि अधिकारी को दिखा दो।',
+  te: 'ఈ ఫోటోతో నేను ఖచ్చితంగా చెప్పలేను. పగటి వెలుగులో నా ఆకును దగ్గరగా ఇంకో ఫోటో తీయండి, లేదా వ్యవసాయ అధికారికి చూపించండి.',
 };
 const EXPERT = {
-  en: 'This looks serious. Please show me to the agriculture officer soon.',
-  hi: 'यह गंभीर लग रहा है। कृपया जल्दी कृषि अधिकारी को दिखाएँ।',
-  te: 'ఇది తీవ్రంగా కనిపిస్తోంది. దయచేసి త్వరగా వ్యవసాయ అధికారికి చూపించండి.',
+  en: "This is serious, so please don't wait. Show me to the agriculture officer in the next day or two.",
+  hi: 'ये गंभीर है, इंतज़ार मत करो। एक-दो दिन में मुझे कृषि अधिकारी को दिखा दो।',
+  te: 'ఇది తీవ్రమైనది, ఆలస్యం చేయకండి. ఒకటి రెండు రోజుల్లో నన్ను వ్యవసాయ అధికారికి చూపించండి.',
 };
+
+// How each language should sound when spoken aloud by Sarvam Bulbul.
+const VOICE_STYLE = {
+  en: "simple spoken Indian English, with contractions (I'm, don't)",
+  hi: 'everyday spoken Hindi as village farmers talk (not formal or Sanskritised), Devanagari script; common farm words like spray or fungicide may stay in English',
+  te: 'everyday spoken Telugu as farmers in Telangana and Andhra talk (not bookish), Telugu script, respectful "meeru"; common farm words like spray or fungicide may stay in English',
+};
+const MOOD_WORDS = ['relaxed and happy', 'a little bothered', 'worried', 'in pain and worried', 'very weak and scared'];
+const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu;
 
 // Below these the plant hedges. Tune from measured data (see _bmad-output/experiments).
 export const CONFIDENCE_MIN = { examples: parseInt(process.env.GUARD_EXAMPLES || '70', 10), cues: 80, open: 85 };
@@ -86,20 +95,30 @@ Advice choices (give the number of the ONE best): ${ADVICE_OPTIONS.map((a, i) =>
 Reply ONLY JSON: {"plant_name": "common English name", "diagnosis": "...", "disease_name": "plain English name of the problem, or null", "second_choice": "another allowed id, or null", "confidence": 0-100, "severity_percent": 0-100 (share of the leaf damaged, 0 if healthy), "advice": 1-${ADVICE_OPTIONS.length}}`;
 }
 
-async function writeSentences({ facts, language, uncertain }) {
-  const langName = LANGUAGE_NAMES[language] || 'English';
+async function writeSentences({ facts, language, uncertain, transcript }) {
+  const style = VOICE_STYLE[language] || VOICE_STYLE.en;
   const n = uncertain ? 2 : 3;
+  const said = transcript && transcript.trim()
+    ? `The farmer just told you: "${transcript.trim().slice(0, 300)}". Respond to what they said in your first sentence.`
+    : 'The farmer only showed you the photo and said nothing.';
   const { json } = await askVisionParts({
     model: FAST_MODEL,
-    maxTokens: 400,
+    maxTokens: 450,
     parts: [{
-      text: `Write ${n} short sentences in ${langName} spoken by a PLANT in the first person to its farmer. Simple everyday words, each under 18 words, no brand names, no doses.
-Facts: plant = ${facts.plant}; problem = ${facts.problem}; health level = ${facts.level} of 4 (0 healthy, 4 critical); ${uncertain ? 'the diagnosis is NOT certain, so say it MIGHT be this problem; ' : ''}advice = "${facts.advice}".
-Sentence 1: how I feel. Sentence 2: what is wrong in simple words (or that I am fine)${uncertain ? '' : '. Sentence 3: the advice, translated'}.
+      text: `You are a ${facts.plant} plant talking out loud to the farmer who looks after you. A text-to-speech voice will say your words, so they must sound like a real person talking, not a report.
+${said}
+What is true: problem = ${facts.problem}; how bad = ${facts.level} of 4 (0 healthy, 4 critical); you feel ${MOOD_WORDS[facts.level] || MOOD_WORDS[2]}. ${uncertain ? 'You are NOT sure what it is, so say honestly that it might be this. ' : ''}What the farmer should do = "${facts.advice}".
+
+Write ${n} short sentences, each under 16 words, in ${style}.
+${uncertain ? 'Say how you feel or what you notice, then that it might be this problem.' : 'Say how you feel or what you notice, then what is wrong in plain words, then what they should do (the advice, in your own words).'}
+Rules: first person ("my leaves", "I"), speak to them as "you"; everyday words and the common local name of the problem, not Latin; no brand names, no doses, no emoji, no exclamation marks, no "Hello farmer"; vary how sentences start. Warm and a little emotional, never cartoonish.
 Reply ONLY JSON: {"sentences": [${n} strings]}`,
     }],
   });
-  return (Array.isArray(json.sentences) ? json.sentences : []).map(String).filter(Boolean).slice(0, n);
+  return (Array.isArray(json.sentences) ? json.sentences : [])
+    .map((x) => String(x).replace(EMOJI, '').trim())
+    .filter(Boolean)
+    .slice(0, n);
 }
 
 /**
@@ -157,7 +176,7 @@ export async function diagnoseForVoice({ imageBase64, crop, transcript = '', lan
   try {
     sentences = await writeSentences({
       facts: { plant: j.plant_name || cropName || 'plant', problem, level, advice: unclear ? ADVICE_OPTIONS[4] : ADVICE_OPTIONS[adviceIdx - 1] },
-      language: lang, uncertain,
+      language: lang, uncertain, transcript,
     });
   } catch (e) {
     console.error('sentence writer failed:', e.message);

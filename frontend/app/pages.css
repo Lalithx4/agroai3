@@ -1,4 +1,5 @@
 /* Fix scrollbar gap */
+
 body {
     overflow-x: hidden !important;
 }
@@ -8,12 +9,14 @@ body {
     max-width: 100% !important;
     overflow-x: hidden !important;
 }
+
 /* ========================================
    PREMIUM PAGE STYLES 2024
    Glassmorphism  Consistent Design System
 ======================================== */
 
 /* === Shared Page Layout === */
+
 .screen.active {
     display: flex !important;
     flex-direction: column !important;
@@ -27,6 +30,7 @@ body {
 }
 
 /* === Page Headers === */
+
 .chat-header,
 .weather-header,
 .calendar-header,
@@ -38,10 +42,8 @@ body {
     gap: 12px;
     padding: 16px 20px;
     width: 100%;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border-bottom: 1px solid var(--hairline);
     position: sticky;
     top: 0;
     z-index: 50;
@@ -57,13 +59,12 @@ body {
     flex: 1;
     font-size: 1.25rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    -webkit-text-fill-color: currentColor;
+    color: var(--ink);
 }
 
 /* Page Content Wrapper */
+
 .weather-content,
 .calendar-content,
 .medicine-content,
@@ -75,6 +76,7 @@ body {
 }
 
 /* === Glass Card Base === */
+
 .weather-hero,
 .farm-score-card,
 .forecast-section,
@@ -86,14 +88,11 @@ body {
 .pest-content>div,
 .history-item,
 .crop-item {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 20px;
     padding: 20px;
     margin-bottom: 16px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
     transition: all 0.3s ease;
 }
 
@@ -104,11 +103,11 @@ body {
 .crops-section:hover,
 .history-item:hover,
 .crop-item:hover {
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border-color: var(--hairline);
 }
 
 /* === Weather Page === */
+
 .weather-content {
     display: flex;
     flex-direction: column;
@@ -116,8 +115,8 @@ body {
 }
 
 .weather-hero {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(6, 95, 70, 0.3) 100%);
-    border-color: rgba(16, 185, 129, 0.2);
+    background: var(--leaf-tint);
+    border-color: var(--hairline-strong);
     text-align: center;
     padding: 32px 24px;
     position: relative;
@@ -131,7 +130,7 @@ body {
     right: -30%;
     width: 300px;
     height: 300px;
-    background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 60%);
+    background: transparent;
     pointer-events: none;
 }
 
@@ -144,21 +143,20 @@ body {
 .weather-icon-big svg {
     width: 64px;
     height: 64px;
-    color: #34d399;
-    filter: drop-shadow(0 4px 12px rgba(16, 185, 129, 0.4));
+    color: var(--leaf);
 }
 
 .weather-temp {
     font-size: 3.5rem;
     font-weight: 800;
-    color: #f8fafc;
+    color: var(--ink);
     line-height: 1;
     margin-bottom: 8px;
 }
 
 .weather-desc {
     font-size: 1.25rem;
-    color: #94a3b8;
+    color: var(--ink-2);
     margin-bottom: 16px;
 }
 
@@ -167,10 +165,10 @@ body {
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--surface);
     border-radius: 9999px;
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: var(--ink-2);
 }
 
 .weather-details {
@@ -179,7 +177,7 @@ body {
     gap: 16px;
     margin-top: 24px;
     padding-top: 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--hairline);
 }
 
 .detail {
@@ -193,24 +191,25 @@ body {
 }
 
 .detail-icon svg {
-    color: #34d399;
+    color: var(--leaf);
 }
 
 .detail-value {
     display: block;
     font-size: 1.25rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--ink);
 }
 
 .detail-label {
     font-size: 0.75rem;
-    color: #64748b;
+    color: var(--ink-3);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
 /* Farm Score */
+
 .farm-score-card h4,
 .forecast-section h4,
 .advice-card h4,
@@ -220,14 +219,14 @@ body {
     gap: 10px;
     font-size: 1rem;
     font-weight: 600;
-    color: #f8fafc;
+    color: var(--ink);
     margin-bottom: 16px;
 }
 
 .farm-score-card h4 svg,
 .forecast-section h4 svg,
 .advice-card h4 svg {
-    color: #34d399;
+    color: var(--leaf);
 }
 
 .score-display {
@@ -251,17 +250,16 @@ body {
 
 .score-circle .bg {
     fill: none;
-    stroke: rgba(255, 255, 255, 0.08);
+    stroke: var(--ink-3);
     stroke-width: 10;
 }
 
 .score-circle .fill {
     fill: none;
-    stroke: #10b981;
+    stroke: var(--leaf);
     stroke-width: 10;
     stroke-linecap: round;
     stroke-dasharray: 283;
-    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.5));
 }
 
 .score-num {
@@ -271,16 +269,17 @@ body {
     transform: translate(-50%, -50%);
     font-size: 2rem;
     font-weight: 800;
-    color: #f8fafc;
+    color: var(--ink);
 }
 
 .score-label {
     font-size: 0.9rem;
     font-weight: 600;
-    color: #34d399;
+    color: var(--leaf);
 }
 
 /* Forecast */
+
 .forecast-list {
     display: flex;
     gap: 10px;
@@ -294,41 +293,42 @@ body {
     min-width: 70px;
     text-align: center;
     padding: 14px 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 16px;
     transition: all 0.3s;
 }
 
 .forecast-item:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(16, 185, 129, 0.3);
+    background: var(--surface);
+    border-color: var(--hairline-strong);
 }
 
 .forecast-day {
     font-size: 0.75rem;
-    color: #64748b;
+    color: var(--ink-3);
     margin-bottom: 8px;
 }
 
 .forecast-icon svg {
-    color: #34d399;
+    color: var(--leaf);
 }
 
 .forecast-temp {
     font-size: 1rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--ink);
     margin-top: 8px;
 }
 
 /* Advice */
+
 .advice-item {
     display: flex;
     align-items: flex-start;
     gap: 12px;
     padding: 12px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface);
     border-radius: 12px;
     margin-bottom: 8px;
 }
@@ -338,18 +338,19 @@ body {
 }
 
 .advice-item svg {
-    color: #fbbf24;
+    color: var(--amber);
     flex-shrink: 0;
     margin-top: 2px;
 }
 
 .advice-item span {
     font-size: 0.9rem;
-    color: #94a3b8;
+    color: var(--ink-2);
     line-height: 1.5;
 }
 
 /* === Chat Page === */
+
 .chat-plant-info {
     display: flex;
     align-items: center;
@@ -360,13 +361,13 @@ body {
 .plant-emoji {
     width: 44px;
     height: 44px;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: var(--leaf-tint);
+    border: 1px solid var(--hairline-strong);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #34d399;
+    color: var(--leaf);
 }
 
 .plant-details {
@@ -377,12 +378,12 @@ body {
 .plant-name {
     font-weight: 600;
     font-size: 1rem;
-    color: #f8fafc;
+    color: var(--ink);
 }
 
 .plant-status {
     font-size: 0.8rem;
-    color: #34d399;
+    color: var(--leaf);
 }
 
 .tts-btn {
@@ -391,19 +392,18 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 14px;
-    color: #94a3b8;
+    color: var(--ink-2);
     cursor: pointer;
     transition: all 0.3s;
 }
 
 .tts-btn.active {
-    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    background: var(--leaf);
     border-color: transparent;
-    color: white;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    color: var(--on-leaf);
 }
 
 .chat-messages {
@@ -446,22 +446,21 @@ body {
 }
 
 .message.user .message-bubble {
-    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-    color: white;
+    background: var(--leaf);
+    color: var(--on-leaf);
     border-bottom-right-radius: 6px;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .message.plant .message-bubble {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #f8fafc;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    color: var(--ink);
     border-bottom-left-radius: 6px;
 }
 
 .message-time {
     font-size: 0.7rem;
-    color: #64748b;
+    color: var(--ink-3);
     margin-top: 4px;
     padding: 0 4px;
 }
@@ -470,7 +469,7 @@ body {
     display: flex;
     gap: 4px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--surface);
     border-radius: 20px;
     width: fit-content;
 }
@@ -478,7 +477,7 @@ body {
 .typing-indicator span {
     width: 8px;
     height: 8px;
-    background: #34d399;
+    background: var(--leaf);
     border-radius: 50%;
     animation: typing-bounce 1.4s ease-in-out infinite;
 }
@@ -492,7 +491,6 @@ body {
 }
 
 @keyframes typing-bounce {
-
     0%,
     60%,
     100% {
@@ -516,19 +514,19 @@ body {
     align-items: center;
     gap: 6px;
     padding: 10px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 9999px;
-    color: #94a3b8;
+    color: var(--ink-2);
     font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.3s;
 }
 
 .quick-replies button:hover {
-    background: rgba(16, 185, 129, 0.15);
-    border-color: rgba(16, 185, 129, 0.3);
-    color: #34d399;
+    background: var(--leaf-tint);
+    border-color: var(--hairline-strong);
+    color: var(--leaf);
 }
 
 .chat-input-bar {
@@ -536,23 +534,22 @@ body {
     align-items: center;
     gap: 10px;
     padding: 12px 16px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 24px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
 .chat-input-bar input {
     flex: 1;
     background: transparent;
     border: none;
-    color: #f8fafc;
+    color: var(--ink);
     font-size: 1rem;
     outline: none;
 }
 
 .chat-input-bar input::placeholder {
-    color: #64748b;
+    color: var(--ink-3);
 }
 
 .mic-btn {
@@ -561,17 +558,17 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--surface);
     border: none;
     border-radius: 14px;
-    color: #94a3b8;
+    color: var(--ink-2);
     cursor: pointer;
     transition: all 0.3s;
 }
 
 .mic-btn:hover {
-    background: rgba(139, 92, 246, 0.2);
-    color: #a78bfa;
+    background: var(--sky-tint);
+    color: var(--sky);
 }
 
 .send-btn {
@@ -580,13 +577,12 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    background: var(--leaf);
     border: none;
     border-radius: 14px;
-    color: white;
+    color: var(--on-leaf);
     cursor: pointer;
     transition: all 0.3s;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .send-btn:hover {
@@ -599,6 +595,7 @@ body {
 }
 
 /* === Calendar Page === */
+
 .calendar-content {
     display: flex;
     flex-direction: column;
@@ -607,7 +604,7 @@ body {
 
 .crops-section h4 svg,
 .crops-section h4 {
-    color: #34d399;
+    color: var(--leaf);
 }
 
 .crops-list {
@@ -625,13 +622,13 @@ body {
 }
 
 .crop-item svg {
-    color: #34d399;
+    color: var(--leaf);
 }
 
 .empty-crops {
     text-align: center;
     padding: 32px;
-    color: #64748b;
+    color: var(--ink-3);
 }
 
 .empty-crops button {
@@ -640,13 +637,12 @@ body {
     gap: 8px;
     margin-top: 16px;
     padding: 12px 24px;
-    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    background: var(--leaf);
     border: none;
     border-radius: 14px;
-    color: white;
+    color: var(--on-leaf);
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .mini-calendar {
@@ -666,23 +662,23 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 10px;
-    color: #94a3b8;
+    color: var(--ink-2);
     cursor: pointer;
     transition: all 0.3s;
 }
 
 .calendar-nav button:hover {
-    background: rgba(16, 185, 129, 0.15);
-    border-color: rgba(16, 185, 129, 0.3);
-    color: #34d399;
+    background: var(--leaf-tint);
+    border-color: var(--hairline-strong);
+    color: var(--leaf);
 }
 
 .calendar-nav span {
     font-weight: 600;
-    color: #f8fafc;
+    color: var(--ink);
 }
 
 .calendar-grid {
@@ -696,16 +692,15 @@ body {
     padding: 10px 0;
     border-radius: 10px;
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: var(--ink-2);
 }
 
 /* === Medicine Page === */
+
 .medicine-content {
     padding: 0;
     background: none;
     border: none;
-    box-shadow: none;
-    backdrop-filter: none;
 }
 
 .medicine-search {
@@ -717,22 +712,21 @@ body {
 .medicine-search input {
     flex: 1;
     padding: 14px 18px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 16px;
-    color: #f8fafc;
+    color: var(--ink);
     font-size: 1rem;
     outline: none;
     transition: all 0.3s;
 }
 
 .medicine-search input:focus {
-    border-color: rgba(16, 185, 129, 0.4);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    border-color: var(--leaf);
 }
 
 .medicine-search input::placeholder {
-    color: #64748b;
+    color: var(--ink-3);
 }
 
 .medicine-search button {
@@ -741,12 +735,11 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    background: var(--leaf);
     border: none;
     border-radius: 16px;
-    color: white;
+    color: var(--on-leaf);
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .disease-categories {
@@ -762,10 +755,10 @@ body {
     align-items: center;
     gap: 6px;
     padding: 10px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 12px;
-    color: #94a3b8;
+    color: var(--ink-2);
     font-size: 0.85rem;
     white-space: nowrap;
     cursor: pointer;
@@ -774,9 +767,9 @@ body {
 
 .cat-btn:hover,
 .cat-btn.active {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
-    border-color: rgba(16, 185, 129, 0.3);
-    color: #34d399;
+    background: var(--leaf-tint);
+    border-color: var(--hairline-strong);
+    color: var(--leaf);
 }
 
 .disease-list {
@@ -790,15 +783,15 @@ body {
     align-items: center;
     gap: 14px;
     padding: 16px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 16px;
     cursor: pointer;
     transition: all 0.3s;
 }
 
 .disease-card:hover {
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: var(--hairline);
     transform: translateX(4px);
 }
 
@@ -808,27 +801,27 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(244, 63, 94, 0.15);
+    background: var(--terracotta-tint);
     border-radius: 14px;
-    color: #fb7185;
+    color: var(--terracotta);
 }
 
 .disease-name {
     flex: 1;
     font-weight: 600;
-    color: #f8fafc;
+    color: var(--ink);
 }
 
 .disease-arrow {
-    color: #64748b;
+    color: var(--ink-3);
 }
 
 /* Treatment Panel */
+
 .treatment-panel {
     padding: 0;
     background: none;
     border: none;
-    box-shadow: none;
 }
 
 .back-treatment {
@@ -836,10 +829,10 @@ body {
     align-items: center;
     gap: 8px;
     padding: 10px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 12px;
-    color: #94a3b8;
+    color: var(--ink-2);
     font-size: 0.9rem;
     cursor: pointer;
     margin-bottom: 20px;
@@ -847,13 +840,13 @@ body {
 }
 
 .back-treatment:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #f8fafc;
+    background: var(--surface);
+    color: var(--ink);
 }
 
 .treatment-content {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 20px;
     padding: 24px;
 }
@@ -863,14 +856,14 @@ body {
     align-items: center;
     gap: 12px;
     font-size: 1.25rem;
-    color: #f8fafc;
+    color: var(--ink);
     margin-bottom: 24px;
     padding-bottom: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--hairline);
 }
 
 .treatment-content h3 svg {
-    color: #fb7185;
+    color: var(--terracotta);
 }
 
 .treatment-section {
@@ -886,12 +879,12 @@ body {
     align-items: center;
     gap: 10px;
     font-size: 1rem;
-    color: #f8fafc;
+    color: var(--ink);
     margin-bottom: 12px;
 }
 
 .treatment-section h4 svg {
-    color: #34d399;
+    color: var(--leaf);
 }
 
 .treatment-section ul {
@@ -904,20 +897,21 @@ body {
     align-items: center;
     gap: 10px;
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface);
     border-radius: 10px;
     margin-bottom: 8px;
-    color: #94a3b8;
+    color: var(--ink-2);
     font-size: 0.9rem;
 }
 
 .treatment-section li::before {
     content: '•';
-    color: #34d399;
+    color: var(--leaf);
     font-weight: bold;
 }
 
 /* === Pest Page === */
+
 .pest-content {
     display: flex;
     flex-direction: column;
@@ -933,8 +927,8 @@ body {
     align-items: center;
     gap: 14px;
     padding: 16px 20px;
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
-    border: 1px solid rgba(245, 158, 11, 0.25);
+    background: var(--amber-tint);
+    border: 1px solid var(--hairline-strong);
     border-radius: 16px;
 }
 
@@ -944,9 +938,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(245, 158, 11, 0.2);
+    background: var(--amber-tint);
     border-radius: 12px;
-    color: #fbbf24;
+    color: var(--amber);
 }
 
 .alert-info {
@@ -957,12 +951,12 @@ body {
 
 .alert-title {
     font-weight: 600;
-    color: #fbbf24;
+    color: var(--amber);
 }
 
 .alert-text {
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: var(--ink-2);
 }
 
 .crop-pest-section h4,
@@ -973,23 +967,23 @@ body {
     gap: 10px;
     font-size: 1rem;
     font-weight: 600;
-    color: #f8fafc;
+    color: var(--ink);
     margin-bottom: 16px;
 }
 
 .crop-pest-section h4 svg,
 .pest-calendar-section h4 svg,
 .sightings-section h4 svg {
-    color: #34d399;
+    color: var(--leaf);
 }
 
 .crop-selector select {
     width: 100%;
     padding: 14px 18px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 14px;
-    color: #f8fafc;
+    color: var(--ink);
     font-size: 1rem;
     cursor: pointer;
     margin-bottom: 16px;
@@ -997,8 +991,8 @@ body {
 
 .pest-list,
 .pest-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
 }
 
 .pest-card {
@@ -1011,7 +1005,7 @@ body {
 }
 
 .pest-card svg {
-    color: #fb7185;
+    color: var(--terracotta);
 }
 
 .season-tabs {
@@ -1023,10 +1017,10 @@ body {
 .season-tab {
     flex: 1;
     padding: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 12px;
-    color: #94a3b8;
+    color: var(--ink-2);
     font-size: 0.9rem;
     text-align: center;
     cursor: pointer;
@@ -1035,9 +1029,9 @@ body {
 
 .season-tab:hover,
 .season-tab.active {
-    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    background: var(--leaf);
     border-color: transparent;
-    color: white;
+    color: var(--on-leaf);
 }
 
 .seasonal-pests {
@@ -1049,10 +1043,11 @@ body {
 .no-sightings {
     text-align: center;
     padding: 24px;
-    color: #64748b;
+    color: var(--ink-3);
 }
 
 /* === History Page === */
+
 .history-list {
     display: flex;
     flex-direction: column;
@@ -1084,7 +1079,7 @@ body {
 .history-plant {
     font-weight: 600;
     font-size: 1rem;
-    color: #f8fafc;
+    color: var(--ink);
 }
 
 .history-status {
@@ -1095,16 +1090,16 @@ body {
 }
 
 .history-status.healthy {
-    color: #22c55e;
+    color: var(--leaf);
 }
 
 .history-status.unhealthy {
-    color: #f59e0b;
+    color: var(--amber);
 }
 
 .history-date {
     font-size: 0.8rem;
-    color: #64748b;
+    color: var(--ink-3);
 }
 
 .empty-state {
@@ -1113,12 +1108,12 @@ body {
 }
 
 .empty-icon svg {
-    color: #64748b;
+    color: var(--ink-3);
     margin-bottom: 16px;
 }
 
 .empty-state p {
-    color: #94a3b8;
+    color: var(--ink-2);
     margin-bottom: 20px;
 }
 
@@ -1127,25 +1122,22 @@ body {
     align-items: center;
     gap: 8px;
     padding: 14px 28px;
-    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    background: var(--leaf);
     border-radius: 16px;
-    color: white;
+    color: var(--on-leaf);
     font-weight: 600;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     transition: all 0.3s;
 }
 
 .start-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
 }
 
 /* === Modal Updates === */
+
 .modal-box {
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--paper);
+    border: 1px solid var(--hairline);
     border-radius: 24px 24px 0 0;
     padding: 28px;
 }
@@ -1155,12 +1147,12 @@ body {
     align-items: center;
     gap: 12px;
     font-size: 1.25rem;
-    color: #f8fafc;
+    color: var(--ink);
     margin-bottom: 24px;
 }
 
 .modal-box h3 svg {
-    color: #34d399;
+    color: var(--leaf);
 }
 
 .form-group {
@@ -1171,7 +1163,7 @@ body {
     display: block;
     font-size: 0.85rem;
     font-weight: 500;
-    color: #94a3b8;
+    color: var(--ink-2);
     margin-bottom: 8px;
 }
 
@@ -1180,10 +1172,10 @@ body {
 .form-group textarea {
     width: 100%;
     padding: 14px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 14px;
-    color: #f8fafc;
+    color: var(--ink);
     font-size: 1rem;
     transition: all 0.3s;
 }
@@ -1192,8 +1184,7 @@ body {
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: rgba(16, 185, 129, 0.4);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    border-color: var(--leaf);
 }
 
 .submit-btn {
@@ -1203,23 +1194,22 @@ body {
     justify-content: center;
     gap: 10px;
     padding: 16px;
-    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    background: var(--leaf);
     border: none;
     border-radius: 16px;
-    color: white;
+    color: var(--on-leaf);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     transition: all 0.3s;
 }
 
 .submit-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
 }
 
 /* === Button Updates === */
+
 .back-btn,
 .refresh-btn,
 .add-btn,
@@ -1230,10 +1220,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
     border-radius: 14px;
-    color: #94a3b8;
+    color: var(--ink-2);
     cursor: pointer;
     transition: all 0.3s;
 }
@@ -1242,83 +1232,26 @@ body {
 .refresh-btn:hover,
 .add-btn:hover,
 .report-btn:hover {
-    background: rgba(16, 185, 129, 0.15);
-    border-color: rgba(16, 185, 129, 0.3);
-    color: #34d399;
+    background: var(--leaf-tint);
+    border-color: var(--hairline-strong);
+    color: var(--leaf);
 }
 
 .clear-btn:hover {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #f87171;
+    background: var(--terracotta-tint);
+    border-color: var(--hairline-strong);
+    color: var(--terracotta);
 }
 
 /* === Light Mode === */
-[data-theme="light"] .chat-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 20px;
-    margin: -16px -16px 20px -16px;
-    width: calc(100% + 32px);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    position: sticky;
-    top: 0;
-    z-index: 50;
-}
 
-.weather-header,
-[data-theme="light"] .weather-header,
-[data-theme="light"] .calendar-header,
-[data-theme="light"] .medicine-header,
-[data-theme="light"] .pest-header,
-[data-theme="light"] .history-header {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
-    border-color: rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="light"] .chat-header h2,
-[data-theme="light"] .weather-header h2,
-[data-theme="light"] .calendar-header h2,
-[data-theme="light"] .medicine-header h2,
-[data-theme="light"] .pest-header h2,
-[data-theme="light"] .history-header h2 {
-    background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-}
-
-[data-theme="light"] .weather-hero,
-[data-theme="light"] .farm-score-card,
-[data-theme="light"] .forecast-section,
-[data-theme="light"] .advice-card,
-[data-theme="light"] .crops-section,
-[data-theme="light"] .mini-calendar,
-[data-theme="light"] .history-item,
-[data-theme="light"] .crop-item,
-[data-theme="light"] .disease-card,
-[data-theme="light"] .treatment-content,
-[data-theme="light"] .chat-input-bar,
-[data-theme="light"] .message.plant .message-bubble {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.6) 100%);
-    border-color: rgba(0, 0, 0, 0.08);
-}
-
-[data-theme="light"] .weather-temp,
-[data-theme="light"] .score-num,
-[data-theme="light"] .forecast-temp,
-[data-theme="light"] .plant-name,
-[data-theme="light"] .disease-name,
-[data-theme="light"] .history-plant,
-[data-theme="light"] .treatment-content h3,
-[data-theme="light"] .calendar-nav span {
-    color: #0f172a;
+.weather-header {
+    background: var(--surface);
+    border-color: var(--hairline);
 }
 
 /* === Responsive === */
+
 @media (min-width: 640px) {
     .weather-content {
         flex-direction: row;
@@ -1330,7 +1263,7 @@ body {
     }
 
     .farm-score-card,
-    .forecast-section {
+.forecast-section {
         flex: 1 1 calc(50% - 8px);
     }
 
@@ -1343,7 +1276,7 @@ body {
     }
 
     .crops-section,
-    .mini-calendar {
+.mini-calendar {
         flex: 1;
     }
 }
@@ -1354,104 +1287,31 @@ body {
     }
 
     .chat-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 20px;
-    margin: -16px -16px 20px -16px;
-    width: calc(100% + 32px);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    position: sticky;
-    top: 0;
-    z-index: 50;
-}
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        margin: -16px -16px 20px -16px;
+        width: calc(100% + 32px);
+        background: var(--surface);
+        border-bottom: 1px solid var(--hairline);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
 
-.weather-header,
     .weather-header,
-    .calendar-header,
-    .medicine-header,
-    .pest-header,
-    .history-header {
+.weather-header,
+.calendar-header,
+.medicine-header,
+.pest-header,
+.history-header {
         margin: -24px -24px 24px -24px;
         padding: 20px 28px;
     }
 }
+
 /* Additional Light Mode Text Fixes */
-[data-theme="light"] .detail-value,
-[data-theme="light"] .detail-label,
-[data-theme="light"] .farm-score-card h4,
-[data-theme="light"] .forecast-section h4,
-[data-theme="light"] .advice-card h4,
-[data-theme="light"] .crops-section h4,
-[data-theme="light"] .crop-pest-section h4,
-[data-theme="light"] .pest-calendar-section h4,
-[data-theme="light"] .sightings-section h4,
-[data-theme="light"] .forecast-day,
-[data-theme="light"] .forecast-temp,
-[data-theme="light"] .advice-item span,
-[data-theme="light"] .weather-desc,
-[data-theme="light"] .weather-location,
-[data-theme="light"] .calendar-grid > div,
-[data-theme="light"] .message.plant .message-bubble,
-[data-theme="light"] .message-time,
-[data-theme="light"] .quick-replies button,
-[data-theme="light"] .cat-btn,
-[data-theme="light"] .pest-card,
-[data-theme="light"] .pest-card strong,
-[data-theme="light"] .treatment-section li,
-[data-theme="light"] .treatment-section h4,
-[data-theme="light"] .history-info span,
-[data-theme="light"] .empty-crops,
-[data-theme="light"] .empty-state p,
-[data-theme="light"] .no-sightings,
-[data-theme="light"] .alert-text {
-    color: #1e293b;
-}
-
-[data-theme="light"] .chat-input-bar input,
-[data-theme="light"] .medicine-search input,
-[data-theme="light"] .crop-selector select,
-[data-theme="light"] .form-group input,
-[data-theme="light"] .form-group select,
-[data-theme="light"] .form-group textarea {
-    color: #0f172a;
-    background: rgba(255, 255, 255, 0.9);
-}
-
-[data-theme="light"] .back-btn,
-[data-theme="light"] .refresh-btn,
-[data-theme="light"] .add-btn,
-[data-theme="light"] .report-btn,
-[data-theme="light"] .clear-btn,
-[data-theme="light"] .tts-btn,
-[data-theme="light"] .mic-btn,
-[data-theme="light"] .calendar-nav button,
-[data-theme="light"] .disease-arrow {
-    background: rgba(0, 0, 0, 0.05);
-    border-color: rgba(0, 0, 0, 0.1);
-    color: #475569;
-}
-
-[data-theme="light"] .forecast-item,
-[data-theme="light"] .advice-item,
-[data-theme="light"] .pest-card,
-[data-theme="light"] .treatment-section li,
-[data-theme="light"] .typing-indicator,
-[data-theme="light"] .quick-replies button {
-    background: rgba(0, 0, 0, 0.03);
-    border-color: rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="light"] .pest-alert-banner {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
-}
-
-[data-theme="light"] .score-circle .bg {
-    stroke: rgba(0, 0, 0, 0.08);
-}
 
 /* ========================================
    MOBILE-FIRST RESPONSIVE ENHANCEMENTS
@@ -1459,6 +1319,7 @@ body {
 ======================================== */
 
 /* === Mobile Base (< 480px) === */
+
 @media (max-width: 479px) {
     .app-main {
         padding-top: 56px !important;
@@ -1469,51 +1330,55 @@ body {
     }
 
     /* Headers - Compact on mobile */
+
     .chat-header,
-    .weather-header,
-    .calendar-header,
-    .medicine-header,
-    .pest-header,
-    .history-header {
+.weather-header,
+.calendar-header,
+.medicine-header,
+.pest-header,
+.history-header {
         padding: 12px 16px;
         gap: 8px;
     }
 
     .chat-header h2,
-    .weather-header h2,
-    .calendar-header h2,
-    .medicine-header h2,
-    .pest-header h2,
-    .history-header h2 {
+.weather-header h2,
+.calendar-header h2,
+.medicine-header h2,
+.pest-header h2,
+.history-header h2 {
         font-size: 1.1rem;
     }
 
     /* Content areas */
+
     .weather-content,
-    .calendar-content,
-    .medicine-content,
-    .pest-content,
-    .history-list,
-    .chat-body {
+.calendar-content,
+.medicine-content,
+.pest-content,
+.history-list,
+.chat-body {
         padding: 12px;
     }
 
     /* Cards - Full width with less padding */
+
     .weather-hero,
-    .farm-score-card,
-    .forecast-section,
-    .advice-card,
-    .crops-section,
-    .mini-calendar,
-    .medicine-card,
-    .pest-card,
-    .history-item {
+.farm-score-card,
+.forecast-section,
+.advice-card,
+.crops-section,
+.mini-calendar,
+.medicine-card,
+.pest-card,
+.history-item {
         padding: 16px;
         border-radius: 16px;
         margin-bottom: 12px;
     }
 
     /* Weather specifics */
+
     .weather-temp {
         font-size: 3rem !important;
     }
@@ -1534,6 +1399,7 @@ body {
     }
 
     /* Forecast - Horizontal scroll */
+
     .forecast-list {
         display: flex;
         overflow-x: auto;
@@ -1550,6 +1416,7 @@ body {
     }
 
     /* Chat - Optimized for mobile keyboards */
+
     .chat-input-bar {
         padding: 10px 12px;
         gap: 8px;
@@ -1561,10 +1428,12 @@ body {
 
     .chat-input-bar input {
         padding: 12px 14px;
-        font-size: 16px; /* Prevents iOS zoom */
+        font-size: 16px;
     }
 
-    .mic-btn, .send-btn, .tts-btn {
+    .mic-btn,
+.send-btn,
+.tts-btn {
         width: 44px;
         height: 44px;
         min-width: 44px;
@@ -1592,6 +1461,7 @@ body {
     }
 
     /* History */
+
     .history-item {
         flex-direction: row;
         align-items: center;
@@ -1618,6 +1488,7 @@ body {
     }
 
     /* Calendar */
+
     .calendar-grid {
         gap: 4px;
     }
@@ -1628,16 +1499,18 @@ body {
     }
 
     /* Buttons - Touch friendly */
+
     .back-btn,
-    .refresh-btn,
-    .clear-btn,
-    .add-btn {
+.refresh-btn,
+.clear-btn,
+.add-btn {
         width: 40px;
         height: 40px;
         min-width: 40px;
     }
 
     /* Score circle */
+
     .score-circle {
         width: 100px;
         height: 100px;
@@ -1648,12 +1521,14 @@ body {
     }
 
     /* Typing indicator */
+
     .typing-indicator {
         padding: 12px 16px;
     }
 }
 
 /* === Small tablets (480px - 639px) === */
+
 @media (min-width: 480px) and (max-width: 639px) {
     .weather-details {
         display: grid;
@@ -1678,44 +1553,48 @@ body {
 }
 
 /* === Touch-friendly improvements === */
+
 @media (hover: none) and (pointer: coarse) {
     /* Larger touch targets */
+
     .back-btn,
-    .refresh-btn,
-    .clear-btn,
-    .add-btn,
-    .tts-btn,
-    .mic-btn,
-    .send-btn {
+.refresh-btn,
+.clear-btn,
+.add-btn,
+.tts-btn,
+.mic-btn,
+.send-btn {
         min-width: 44px;
         min-height: 44px;
     }
 
     /* Remove hover effects on touch devices */
+
     .weather-hero:hover,
-    .farm-score-card:hover,
-    .forecast-section:hover,
-    .advice-card:hover,
-    .history-item:hover,
-    .pest-card:hover {
+.farm-score-card:hover,
+.forecast-section:hover,
+.advice-card:hover,
+.history-item:hover,
+.pest-card:hover {
         transform: none;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
     }
 
     /* Active states for touch */
+
     .back-btn:active,
-    .refresh-btn:active,
-    .clear-btn:active,
-    .add-btn:active,
-    .mic-btn:active,
-    .send-btn:active,
-    .quick-replies button:active {
+.refresh-btn:active,
+.clear-btn:active,
+.add-btn:active,
+.mic-btn:active,
+.send-btn:active,
+.quick-replies button:active {
         transform: scale(0.95);
         opacity: 0.8;
     }
 }
 
 /* === Safe area insets for notched devices === */
+
 @supports (padding-top: env(safe-area-inset-top)) {
     .app-header {
         padding-top: max(12px, env(safe-area-inset-top));
@@ -1731,10 +1610,11 @@ body {
 }
 
 /* === Landscape mode on mobile === */
+
 @media (max-height: 500px) and (orientation: landscape) {
     .chat-header,
-    .weather-header,
-    .calendar-header {
+.weather-header,
+.calendar-header {
         padding: 8px 16px;
     }
 
@@ -1753,13 +1633,14 @@ body {
 }
 
 /* === Print styles === */
+
 @media print {
     .app-header,
-    .chat-input-bar,
-    .quick-replies,
-    .back-btn,
-    .mic-btn,
-    .tts-btn {
+.chat-input-bar,
+.quick-replies,
+.back-btn,
+.mic-btn,
+.tts-btn {
         display: none !important;
     }
 

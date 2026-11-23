@@ -1,286 +1,143 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useEffect, useState, useRef } from 'react';
-import { getStats } from '@/services/cache';
+import { getStats, clearAll } from '@/services/cache';
 import {
-  Camera, MessageCircle, Cloud, Calendar, Pill, Bug, BarChart3,
-  User, WifiOff, RotateCcw, Sparkles, ArrowRight, Leaf, TrendingUp,
-  Shield, Zap, Star, Mountain, Mic
+  Camera, Mic, Mountain, Cloud, MessageCircle, CalendarDays, Pill, Bug,
+  History, ChevronRight, ArrowRight, WifiOff,
 } from 'lucide-react';
+import './home.css';
+
+const TOOLS = [
+  { href: '/soil', icon: Mountain, title: 'soilTest', desc: 'soilTestDesc' },
+  { href: '/weather', icon: Cloud, title: 'weather', desc: 'weatherDesc' },
+  { href: '/chat', icon: MessageCircle, title: 'talkToPlant', desc: 'chatDesc' },
+  { href: '/calendar', icon: CalendarDays, title: 'cropCalendar', desc: 'calendarDesc' },
+  { href: '/medicine', icon: Pill, title: 'medicine', desc: 'medicineDesc' },
+  { href: '/pest', icon: Bug, title: 'pestTracker', desc: 'pestDesc' },
+  { href: '/history', icon: History, title: 'history', desc: 'historyDesc' },
+];
+
+const LOCALE = { en: 'en-IN', hi: 'hi-IN', te: 'te-IN' };
+
+const subscribeOnline = (cb) => {
+  window.addEventListener('online', cb);
+  window.addEventListener('offline', cb);
+  return () => {
+    window.removeEventListener('online', cb);
+    window.removeEventListener('offline', cb);
+  };
+};
 
 export default function HomePage() {
-  const { t } = useLanguage();
-  const [stats, setStats] = useState({ total: 0, healthy: 0, issues: 0 });
-  const [isOnline, setIsOnline] = useState(true);
-  const [greeting, setGreeting] = useState('');
-  const [animatedStats, setAnimatedStats] = useState({ total: 0, healthy: 0, issues: 0 });
-  const statsRef = useRef(null);
-  const [hasAnimated, setHasAnimated] = useState(false);
+  const { t, language } = useLanguage();
+  const [stats, setStats] = useState(() => getStats());
+  const isOnline = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
+  const [now] = useState(() => new Date());
 
+  // Stats can change in another tab (e.g. a scan finished); refresh when the page regains focus.
   useEffect(() => {
-    const loadedStats = getStats();
-    setStats(loadedStats);
-    setIsOnline(navigator.onLine);
-
-    // Set time-based greeting
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Good Morning');
-    else if (hour < 17) setGreeting('Good Afternoon');
-    else setGreeting('Good Evening');
-
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
+    const refresh = () => setStats(getStats());
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
   }, []);
 
-  // Animated counter effect
-  useEffect(() => {
-    if (!hasAnimated && stats.total > 0) {
-      setHasAnimated(true);
-      const duration = 1500;
-      const steps = 60;
-      const interval = duration / steps;
+  const hour = now.getHours();
+  const greeting = t(hour < 12 ? 'greetMorning' : hour < 17 ? 'greetAfternoon' : 'greetEvening');
+  const dateLabel = now.toLocaleDateString(LOCALE[language] || 'en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
-      let step = 0;
-      const timer = setInterval(() => {
-        step++;
-        const progress = step / steps;
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-
-        setAnimatedStats({
-          total: Math.floor(stats.total * easeOut),
-          healthy: Math.floor(stats.healthy * easeOut),
-          issues: Math.floor(stats.issues * easeOut)
-        });
-
-        if (step >= steps) {
-          clearInterval(timer);
-          setAnimatedStats(stats);
-        }
-      }, interval);
-
-      return () => clearInterval(timer);
+  const resetData = () => {
+    if (confirm(t('confirmReset'))) {
+      clearAll();
+      setStats(getStats());
     }
-  }, [stats, hasAnimated]);
-
-  const features = [
-    {
-      icon: Camera,
-      title: t('scanPlant'),
-      desc: t('scanPlantDesc'),
-      href: '/scanner',
-      badge: 'AR',
-      isAR: true,
-      size: 'large',
-      gradient: 'emerald'
-    },
-    {
-      icon: Mic,
-      title: 'Voice Doctor',
-      desc: 'Speak, show a leaf, hear the plant answer',
-      href: '/voice-doctor',
-      badge: 'NEW',
-      size: 'medium',
-      gradient: 'purple'
-    },
-    {
-      icon: Mountain,
-      title: 'Soil Analysis',
-      desc: 'Nutrients, pH & crops',
-      href: '/soil',
-      badge: 'NEW',
-      size: 'medium',
-      gradient: 'amber'
-    },
-    {
-      icon: MessageCircle,
-      title: t('talkToPlant'),
-      desc: 'AI-powered plant assistant',
-      href: '/chat',
-      size: 'medium',
-      gradient: 'purple'
-    },
-    {
-      icon: Cloud,
-      title: t('weather'),
-      desc: 'Live forecast & alerts',
-      href: '/weather',
-      size: 'small',
-      gradient: 'sky'
-    },
-    {
-      icon: Calendar,
-      title: t('cropCalendar'),
-      desc: 'Seasonal planning',
-      href: '/calendar',
-      size: 'small',
-      gradient: 'amber'
-    },
-    {
-      icon: Pill,
-      title: t('medicine'),
-      desc: 'Treatment guides',
-      href: '/medicine',
-      size: 'small',
-      gradient: 'rose'
-    },
-    {
-      icon: Bug,
-      title: t('pestTracker'),
-      desc: 'Pest monitoring',
-      href: '/pest',
-      size: 'small',
-      gradient: 'orange'
-    },
-    {
-      icon: BarChart3,
-      title: t('history'),
-      desc: 'Scan analytics',
-      href: '/history',
-      size: 'medium',
-      gradient: 'indigo'
-    },
-  ];
+  };
 
   return (
-    <section className="dashboard-canvas">
-      {/* Ambient Background Elements */}
-      <div className="ambient-bg">
-        <div className="orb orb-1"></div>
-        <div className="orb orb-2"></div>
-        <div className="orb orb-3"></div>
-        <div className="grid-pattern"></div>
-      </div>
+    <div className="home">
+      {!isOnline && (
+        <div className="home-offline" role="status">
+          <WifiOff size={16} aria-hidden="true" />
+          <span>{t('offlineMode')}</span>
+        </div>
+      )}
 
-      {/* Content Container */}
-      <div className="dashboard-content">
-        {!isOnline && (
-          <div className="offline-banner glass-card">
-            <WifiOff size={18} />
-            <span>{t('offlineMode')}</span>
+      <header className="home-intro">
+        <p className="nb-overline">{dateLabel}</p>
+        <h1 className="home-title">
+          {greeting}.<br />
+          <span>{t('homeQuestion')}</span>
+        </h1>
+      </header>
+
+      <section className="home-actions" aria-label={t('checkSickPlant')}>
+        <Link href="/scanner" className="home-primary">
+          <div className="home-primary-photo">
+            <img src="/images/leaves/tomato-early-blight.jpg" alt="" width={256} height={256} />
+            <span className="home-photo-tag">Tomato · early blight</span>
           </div>
+          <div className="home-primary-body">
+            <span className="home-primary-icon" aria-hidden="true"><Camera size={22} /></span>
+            <h2>{t('checkSickPlant')}</h2>
+            <p>{t('checkSickPlantDesc')}</p>
+            <span className="nb-btn nb-btn-primary home-primary-cta">
+              {t('openCamera')} <ArrowRight size={18} aria-hidden="true" />
+            </span>
+          </div>
+        </Link>
+
+        <Link href="/voice-doctor" className="home-secondary">
+          <span className="home-secondary-icon" aria-hidden="true"><Mic size={22} /></span>
+          <div>
+            <h2>{t('askAloud')}</h2>
+            <p>{t('askAloudDesc')}</p>
+          </div>
+          <ChevronRight className="home-chevron" size={20} aria-hidden="true" />
+        </Link>
+      </section>
+
+      <section className="home-stats" aria-label={t('yourScans')}>
+        <div className="home-section-head">
+          <h2 className="nb-overline">{t('yourScans')}</h2>
+          {stats.total > 0 && <Link href="/history" className="home-link">{t('seeHistory')}</Link>}
+        </div>
+        {stats.total > 0 ? (
+          <dl className="home-stat-row">
+            <div><dt>{t('totalScans')}</dt><dd className="nb-numeral">{stats.total}</dd></div>
+            <div><dt>{t('healthyPlants')}</dt><dd className="nb-numeral is-healthy">{stats.healthy}</dd></div>
+            <div><dt>{t('issuesFound')}</dt><dd className="nb-numeral is-issue">{stats.issues}</dd></div>
+          </dl>
+        ) : (
+          <p className="home-empty">{t('noScansYet')}</p>
         )}
+      </section>
 
-        {/* Premium Hero Card */}
-        <div className="hero-section">
-          <div className="hero-glass">
-            <div className="hero-glow"></div>
-            <div className="hero-inner">
-              <div className="hero-avatar-ring">
-                <div className="hero-avatar">
-                  <Leaf size={32} strokeWidth={1.5} />
-                </div>
-                <div className="avatar-pulse"></div>
-              </div>
-              <div className="hero-text">
-                <span className="hero-greeting">{greeting}</span>
-                <h1 className="hero-title">{t('welcome')}</h1>
-                <p className="hero-subtitle">{t('welcomeDesc')}</p>
-              </div>
-              <div className="hero-badges">
-                <span className="hero-badge">
-                  <Sparkles size={14} />
-                  AI Powered
+      <section className="home-tools" aria-labelledby="home-tools-title">
+        <h2 id="home-tools-title" className="nb-overline">{t('toolsHeading')}</h2>
+        <ul className="home-tool-list">
+          {TOOLS.map(({ href, icon: Icon, title, desc }) => (
+            <li key={href}>
+              <Link href={href} className="home-tool">
+                <span className="home-tool-icon" aria-hidden="true"><Icon size={20} strokeWidth={1.75} /></span>
+                <span className="home-tool-text">
+                  <span className="home-tool-title">{t(title)}</span>
+                  <span className="home-tool-desc">{t(desc)}</span>
                 </span>
-                <span className="hero-badge">
-                  <Shield size={14} />
-                  Secure
-                </span>
-              </div>
-            </div>
-            <div className="hero-accent"></div>
-          </div>
-        </div>
-
-        {/* Glassmorphic Stats Panel */}
-        <div className="stats-panel" ref={statsRef}>
-          <div className="stat-glass">
-            <div className="stat-icon">
-              <Camera size={20} />
-            </div>
-            <div className="stat-content">
-              <span className="stat-value">{animatedStats.total}</span>
-              <span className="stat-label">{t('totalScans')}</span>
-            </div>
-          </div>
-          <div className="stat-divider"></div>
-          <div className="stat-glass success">
-            <div className="stat-icon">
-              <TrendingUp size={20} />
-            </div>
-            <div className="stat-content">
-              <span className="stat-value">{animatedStats.healthy}</span>
-              <span className="stat-label">{t('healthyPlants')}</span>
-            </div>
-          </div>
-          <div className="stat-divider"></div>
-          <div className="stat-glass warning">
-            <div className="stat-icon">
-              <Zap size={20} />
-            </div>
-            <div className="stat-content">
-              <span className="stat-value">{animatedStats.issues}</span>
-              <span className="stat-label">{t('issuesFound')}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Bento Grid Features */}
-        <div className="bento-grid">
-          {features.map((feature, index) => {
-            const IconComponent = feature.icon;
-            return (
-              <Link
-                key={index}
-                href={feature.href}
-                className={`bento-card bento-${feature.size} gradient-${feature.gradient}`}
-                style={{ '--delay': `${index * 0.1}s` }}
-              >
-                <div className="card-glow"></div>
-                <div className="card-content">
-                  {feature.badge && (
-                    <div className={`card-badge ${feature.badge === 'NEW' ? 'badge-new' : 'badge-ar'}`}>
-                      {feature.badge === 'AR' && <Star size={10} />}
-                      {feature.badge}
-                    </div>
-                  )}
-                  <div className="card-icon-wrap">
-                    <IconComponent size={feature.size === 'large' ? 36 : 28} strokeWidth={1.5} />
-                  </div>
-                  <div className="card-text">
-                    <span className="card-title">{feature.title}</span>
-                    <span className="card-desc">{feature.desc}</span>
-                  </div>
-                  <div className="card-arrow">
-                    <ArrowRight size={20} />
-                  </div>
-                </div>
+                <ChevronRight className="home-chevron" size={18} aria-hidden="true" />
               </Link>
-            );
-          })}
-        </div>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-        {/* Reset Button */}
-        <button className="reset-button glass-card" onClick={() => {
-          if (confirm(t('confirmReset'))) {
-            import('@/services/cache').then(cache => {
-              cache.clearAll();
-              setStats({ total: 0, healthy: 0, issues: 0 });
-              setAnimatedStats({ total: 0, healthy: 0, issues: 0 });
-            });
-          }
-        }}>
-          <RotateCcw size={18} />
-          <span>{t('resetData')}</span>
-        </button>
-      </div>
-    </section>
+      <footer className="home-foot">
+        <span>{t('photoCredit')}</span>
+        {stats.total > 0 && (
+          <button type="button" className="home-reset" onClick={resetData}>{t('resetData')}</button>
+        )}
+      </footer>
+    </div>
   );
 }

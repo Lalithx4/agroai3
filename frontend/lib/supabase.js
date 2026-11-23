@@ -4,7 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Supabase is optional: without the env vars the app still works and keeps history on the device only.
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+export const supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 // Generate a unique device ID for anonymous users
 function getDeviceId() {
@@ -25,6 +27,7 @@ function getDeviceId() {
 export async function saveScanHistory(scanData) {
   const deviceId = getDeviceId();
   if (!deviceId) return null;
+  if (!supabase) return null;
 
   try {
     const { data, error } = await supabase
@@ -61,6 +64,7 @@ export async function saveScanHistory(scanData) {
 export async function getScanHistory(limit = 20) {
   const deviceId = getDeviceId();
   if (!deviceId) return [];
+  if (!supabase) return [];
 
   try {
     const { data, error } = await supabase
@@ -85,6 +89,7 @@ export async function getScanHistory(limit = 20) {
 export async function deleteScan(scanId) {
   const deviceId = getDeviceId();
   if (!deviceId) return false;
+  if (!supabase) return false;
 
   try {
     const { error } = await supabase
@@ -112,6 +117,7 @@ export async function deleteScan(scanId) {
 export async function saveUserPreferences(preferences) {
   const deviceId = getDeviceId();
   if (!deviceId) return null;
+  if (!supabase) return null;
 
   try {
     const { data, error } = await supabase
@@ -143,7 +149,7 @@ export async function saveUserPreferences(preferences) {
 
 export async function getUserPreferences() {
   const deviceId = getDeviceId();
-  if (!deviceId) {
+  if (!deviceId || !supabase) {
     return getDefaultPreferences();
   }
 
@@ -183,6 +189,7 @@ function getDefaultPreferences() {
 export async function saveChatMessage(message) {
   const deviceId = getDeviceId();
   if (!deviceId) return null;
+  if (!supabase) return null;
 
   try {
     const { data, error } = await supabase
@@ -217,6 +224,7 @@ export async function saveChatMessage(message) {
 export async function getChatHistory(plantName = null, sessionId = null, limit = 50) {
   const deviceId = getDeviceId();
   if (!deviceId) return [];
+  if (!supabase) return [];
 
   try {
     let query = supabase
@@ -255,6 +263,7 @@ export async function getChatHistory(plantName = null, sessionId = null, limit =
 export async function clearChatHistory(plantName = null) {
   const deviceId = getDeviceId();
   if (!deviceId) return false;
+  if (!supabase) return false;
 
   try {
     let query = supabase
@@ -287,6 +296,7 @@ export async function clearChatHistory(plantName = null) {
 export async function cacheWeatherData(location, weatherData) {
   const deviceId = getDeviceId();
   if (!deviceId) return null;
+  if (!supabase) return null;
 
   try {
     const { data, error } = await supabase
@@ -316,6 +326,7 @@ export async function cacheWeatherData(location, weatherData) {
 export async function getCachedWeather(location) {
   const deviceId = getDeviceId();
   if (!deviceId) return null;
+  if (!supabase) return null;
 
   try {
     const { data, error } = await supabase

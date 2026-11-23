@@ -10,9 +10,10 @@ import './chat.css';
 import { 
     Sprout, Volume2, VolumeX, Mic, Send, HelpCircle, Droplets, 
     Lightbulb, Loader2, StopCircle, Leaf, Bug, Sun, CloudRain,
-    Thermometer, Scissors, Sparkles, Heart, Zap, Brain,
+    Thermometer, Scissors, Sparkles, Heart, Brain,
     FlaskConical, Calendar, MapPin, Wheat, Apple, TreeDeciduous
 } from 'lucide-react';
+import { Sprout as NbSprout } from 'lucide-react';
 
 // Plant personalities for more engaging chat
 const plantPersonalities = {
@@ -26,12 +27,12 @@ const plantPersonalities = {
 
 // Suggested topics for users - with translations
 const suggestedTopics = [
-    { id: 'disease', icon: Bug, text: { en: 'Identify disease', hi: 'रोग पहचानें', te: 'వ్యాధి గుర్తించు' }, color: '#ef4444' },
-    { id: 'water', icon: Droplets, text: { en: 'Watering tips', hi: 'सिंचाई सुझाव', te: 'నీటి చిట్కాలు' }, color: '#3b82f6' },
-    { id: 'fertilizer', icon: FlaskConical, text: { en: 'Fertilizer advice', hi: 'खाद सलाह', te: 'ఎరువు సలహా' }, color: '#10b981' },
-    { id: 'season', icon: Calendar, text: { en: 'Seasonal care', hi: 'मौसमी देखभाल', te: 'కాలానుగుణ సంరక్షణ' }, color: '#f59e0b' },
-    { id: 'harvest', icon: Apple, text: { en: 'Harvest time', hi: 'कटाई का समय', te: 'కోత సమయం' }, color: '#8b5cf6' },
-    { id: 'pest', icon: Bug, text: { en: 'Pest control', hi: 'कीट नियंत्रण', te: 'తెగులు నియంత్రణ' }, color: '#ec4899' },
+    { id: 'disease', icon: Bug, text: { en: 'Identify disease', hi: 'रोग पहचानें', te: 'వ్యాధి గుర్తించు' }, color: 'var(--ink-2)' },
+    { id: 'water', icon: Droplets, text: { en: 'Watering tips', hi: 'सिंचाई सुझाव', te: 'నీటి చిట్కాలు' }, color: 'var(--ink-2)' },
+    { id: 'fertilizer', icon: FlaskConical, text: { en: 'Fertilizer advice', hi: 'खाद सलाह', te: 'ఎరువు సలహా' }, color: 'var(--ink-2)' },
+    { id: 'season', icon: Calendar, text: { en: 'Seasonal care', hi: 'मौसमी देखभाल', te: 'కాలానుగుణ సంరక్షణ' }, color: 'var(--ink-2)' },
+    { id: 'harvest', icon: Apple, text: { en: 'Harvest time', hi: 'कटाई का समय', te: 'కోత సమయం' }, color: 'var(--ink-2)' },
+    { id: 'pest', icon: Bug, text: { en: 'Pest control', hi: 'कीट नियंत्रण', te: 'తెగులు నియంత్రణ' }, color: 'var(--ink-2)' },
 ];
 
 export default function ChatPage() {
@@ -55,58 +56,49 @@ export default function ChatPage() {
     const [showTopics, setShowTopics] = useState(true);
     const [sessionId] = useState(() => 'session_' + Date.now());
 
-    // Deepgram TTS function
-    const speakWithDeepgram = async (text, lang = 'en') => {
-        try {
-            setIsSpeaking(true);
-            
-            // Stop any currently playing audio
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current = null;
-            }
-            
-            // Call our API endpoint for Deepgram TTS
-            const response = await fetch('/api/speak', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text, language: lang })
-            });
-            
-            if (!response.ok) {
-                throw new Error('TTS failed');
-            }
-            
-            const audioBlob = await response.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
-            
-            audioRef.current = new Audio(audioUrl);
-            audioRef.current.onended = () => {
-                setIsSpeaking(false);
-                URL.revokeObjectURL(audioUrl);
-            };
-            audioRef.current.onerror = () => {
-                setIsSpeaking(false);
-                // Fallback to browser TTS
-                fallbackToWebSpeech(text, lang);
-            };
-            await audioRef.current.play();
-        } catch (error) {
-            console.log('Deepgram TTS failed, using fallback:', error);
-            setIsSpeaking(false);
-            fallbackToWebSpeech(text, lang);
+    // Speak a reply: Sarvam (native Hindi/Telugu voices) first, then Deepgram (English only), then the browser.
+    const speakReply = async (text, lang = 'en') => {
+        const spoken = String(text).replace(/[*_#`>]/g, '').replace(/\n+/g, '. ').trim();
+        if (!spoken) return;
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
         }
+        window.speechSynthesis?.cancel();
+        setIsSpeaking(true);
+        const attempts = [
+            () => fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: spoken, language: lang, level: 1 }) }),
+            ...(lang === 'en' ? [() => fetch('/api/speak', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: spoken, language: lang }) })] : []),
+        ];
+        for (const attempt of attempts) {
+            try {
+                const response = await attempt();
+                if (!response.ok) continue;
+                const url = URL.createObjectURL(await response.blob());
+                const audio = new Audio(url);
+                audioRef.current = audio;
+                audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
+                audio.onerror = () => { setIsSpeaking(false); URL.revokeObjectURL(url); };
+                await audio.play();
+                return;
+            } catch {
+                // try the next voice
+            }
+        }
+        fallbackToWebSpeech(spoken, lang);
     };
-    
-    // Fallback to browser TTS if Deepgram fails
+
+    // Last resort: the device's own voice, in the right language.
     const fallbackToWebSpeech = (text, lang) => {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = lang === 'hi' ? 'hi-IN' : lang === 'te' ? 'te-IN' : 'en-US';
-            utterance.rate = 0.9;
-            window.speechSynthesis.speak(utterance);
-        }
+        if (!('speechSynthesis' in window)) { setIsSpeaking(false); return; }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang === 'hi' ? 'hi-IN' : lang === 'te' ? 'te-IN' : 'en-IN';
+        const voice = window.speechSynthesis.getVoices().find((v) => v.lang === utterance.lang);
+        if (voice) utterance.voice = voice;
+        utterance.rate = 0.95;
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+        window.speechSynthesis.speak(utterance);
     };
 
     // Load chat history on mount
@@ -141,9 +133,9 @@ export default function ChatPage() {
 
     const getWelcomeMessage = () => {
         const greetings = {
-            en: `Hey there! 👋 I'm ${currentPlant.name} ${currentPlant.emoji}, your AI plant companion!\n\nI can help you with:\n🌿 Plant care & growth tips\n🔬 Disease diagnosis\n💧 Watering schedules\n🌡️ Weather-based advice\n🌾 Crop recommendations\n\nWhat would you like to know today?`,
-            hi: `नमस्ते! 👋 मैं ${currentPlant.name} ${currentPlant.emoji} हूं, आपका AI पौधा साथी!\n\nमैं आपकी मदद कर सकता हूं:\n🌿 पौधों की देखभाल\n🔬 रोग निदान\n💧 सिंचाई सुझाव\n🌡️ मौसम सलाह\n🌾 फसल सिफारिशें\n\nआज क्या जानना चाहते हैं?`,
-            te: `హలో! 👋 నేను ${currentPlant.name} ${currentPlant.emoji}, మీ AI మొక్క స్నేహితుడిని!\n\nనేను సహాయం చేయగలను:\n🌿 మొక్కల సంరక్షణ\n🔬 వ్యాధి నిర్ధారణ\n💧 నీటిపారుదల చిట్కాలు\n🌡️ వాతావరణ సలహా\n🌾 పంట సిఫార్సులు\n\nఈరోజు ఏమి తెలుసుకోవాలనుకుంటున్నారు?`
+            en: `Hello, I'm ${currentPlant.name}. Ask me anything about your crop: watering, pests, spots on the leaves, fertiliser, what to sow next. What are you growing?`,
+            hi: `नमस्ते, मैं ${currentPlant.name} हूँ। अपनी फसल के बारे में कुछ भी पूछो: पानी, कीड़े, पत्तों पर धब्बे, खाद, आगे क्या बोना है। आप क्या उगा रहे हो?`,
+            te: `నమస్తే, నేను ${currentPlant.name}. మీ పంట గురించి ఏదైనా అడగండి: నీళ్ళు, పురుగులు, ఆకులపై మచ్చలు, ఎరువులు, తర్వాత ఏం విత్తాలి. మీరు ఏం పండిస్తున్నారు?`
         };
         return greetings[language] || greetings.en;
     };
@@ -153,7 +145,8 @@ export default function ChatPage() {
             sender,
             text,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            id: Date.now()
+            id: Date.now() + Math.random(),
+            isWelcome: sender === 'plant' && !saveToSupabase,
         };
         setMessages(prev => [...prev, newMessage]);
         
@@ -191,7 +184,7 @@ export default function ChatPage() {
             
             mediaRecorderRef.current.start(250);
             setIsRecording(true);
-            showToast(language === 'te' ? '🎤 వింటోంది... మాట్లాడండి!' : language === 'hi' ? '🎤 सुन रहा हूं... बोलें!' : '🎤 Listening... Speak now!', 'info');
+            showToast(language === 'te' ? 'వింటోంది... మాట్లాడండి!' : language === 'hi' ? 'सुन रहा हूं... बोलें!' : 'Listening... Speak now!', 'info');
         } catch (err) {
             showToast(language === 'te' ? 'మైక్రోఫోన్ అనుమతి ఇవ్వండి' : language === 'hi' ? 'माइक्रोफोन अनुमति दें' : 'Please allow microphone access', 'error');
         }
@@ -219,7 +212,7 @@ export default function ChatPage() {
             const data = await response.json();
             if (data.transcript) {
                 setInputValue(data.transcript);
-                showToast(language === 'te' ? '✅ అర్థమైంది!' : language === 'hi' ? '✅ समझ गया!' : '✅ Got it!', 'success');
+                showToast(language === 'te' ? 'అర్థమైంది!' : language === 'hi' ? 'समझ गया!' : 'Got it!', 'success');
                 setTimeout(() => {
                     if (data.transcript.trim()) {
                         sendMessageWithText(data.transcript);
@@ -253,16 +246,21 @@ export default function ChatPage() {
         setIsTyping(true);
 
         try {
-            // Pass correct parameters: message, plantType, healthStatus, diseases (array), language
-            const response = await chatWithPlant(message, currentPlant.name, 'unknown', [], language);
+            // Send the recent conversation so the plant remembers what was said.
+            const history = messages
+                .filter((m) => !m.isWelcome)
+                .slice(-10)
+                .map((m) => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text }));
+            const startedAt = Date.now();
+            const response = await chatWithPlant(message, currentPlant.name, 'unknown', [], language, history);
             if (response?.response || response?.reply) {
-                await new Promise(r => setTimeout(r, 500));
                 const replyText = response.response || response.reply;
+                // A short, length-based "typing" pause reads as a person replying, not a machine.
+                const typingMs = Math.min(1400, 350 + replyText.length * 6) - (Date.now() - startedAt);
+                if (typingMs > 0) await new Promise((r) => setTimeout(r, typingMs));
                 addMessage('plant', replyText);
-                
-                // Use Deepgram TTS for voice output
                 if (ttsEnabled) {
-                    speakWithDeepgram(replyText, language);
+                    speakReply(replyText, language);
                 }
             } else {
                 addMessage('plant', getFallbackResponse());
@@ -278,18 +276,18 @@ export default function ChatPage() {
 
     const getFallbackResponse = () => {
         const responses = {
-            en: "I'm here to help with your plants! Try asking about watering, diseases, or seasonal care. 🌿",
-            hi: "मैं आपके पौधों की मदद के लिए यहां हूं! सिंचाई, बीमारियों या मौसमी देखभाल के बारे में पूछें। 🌿",
-            te: "నేను మీ మొక్కలకు సహాయం చేయడానికి ఇక్కడ ఉన్నాను! నీటిపారుదల, వ్యాధులు లేదా కాలానుగుణ సంరక్షణ గురించి అడగండి। 🌿"
+            en: "I'm here to help with your plants! Try asking about watering, diseases, or seasonal care. ",
+            hi: "मैं आपके पौधों की मदद के लिए यहां हूं! सिंचाई, बीमारियों या मौसमी देखभाल के बारे में पूछें। ",
+            te: "నేను మీ మొక్కలకు సహాయం చేయడానికి ఇక్కడ ఉన్నాను! నీటిపారుదల, వ్యాధులు లేదా కాలానుగుణ సంరక్షణ గురించి అడగండి। "
         };
         return responses[language] || responses.en;
     };
 
     const getErrorResponse = () => {
         const responses = {
-            en: "Oops! I had a little hiccup. 🌱 Please try asking again!",
-            hi: "उफ़! थोड़ी समस्या हुई। 🌱 कृपया फिर से पूछें!",
-            te: "అయ్యో! చిన్న సమస్య వచ్చింది। 🌱 దయచేసి మళ్ళీ అడగండి!"
+            en: "Oops! I had a little hiccup. Please try asking again!",
+            hi: "उफ़! थोड़ी समस्या हुई। कृपया फिर से पूछें!",
+            te: "అయ్యో! చిన్న సమస్య వచ్చింది। దయచేసి మళ్ళీ అడగండి!"
         };
         return responses[language] || responses.en;
     };
@@ -316,7 +314,7 @@ export default function ChatPage() {
                 <BackButton />
                 <div className="chat-plant-info">
                     <div className="plant-avatar">
-                        <span className="plant-emoji-large">{currentPlant.emoji}</span>
+                        <NbSprout className="plant-emoji-large" size={24} aria-hidden="true" />
                         <span className="online-dot"></span>
                     </div>
                     <div className="plant-details">
@@ -383,8 +381,8 @@ export default function ChatPage() {
                             style={{ animationDelay: `${idx * 0.05}s` }}
                         >
                             {msg.sender === 'plant' && (
-                                <div className="message-avatar">
-                                    {currentPlant.emoji}
+                                <div className="message-avatar" aria-hidden="true">
+                                    <NbSprout size={18} />
                                 </div>
                             )}
                             <div className="message-content">
@@ -400,7 +398,7 @@ export default function ChatPage() {
                     
                     {isTyping && (
                         <div className="message plant typing">
-                            <div className="message-avatar">{currentPlant.emoji}</div>
+                            <div className="message-avatar" aria-hidden="true"><NbSprout size={18} /></div>
                             <div className="message-content">
                                 <div className="typing-indicator">
                                     <span></span><span></span><span></span>
@@ -437,7 +435,7 @@ export default function ChatPage() {
                         onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                         placeholder={
                             isRecording 
-                                ? (language === 'te' ? '🎤 వింటోంది...' : language === 'hi' ? '🎤 सुन रहा हूं...' : '🎤 Listening...') 
+                                ? (language === 'te' ? 'వింటోంది...' : language === 'hi' ? 'सुन रहा हूं...' : 'Listening...') 
                                 : isTranscribing 
                                     ? (language === 'te' ? 'ప్రాసెస్ చేస్తోంది...' : language === 'hi' ? 'प्रोसेस हो रहा है...' : 'Processing...') 
                                     : (language === 'te' ? 'మొక్కల గురించి ఏదైనా అడగండి...' : language === 'hi' ? 'पौधों के बारे में कुछ भी पूछें...' : 'Ask anything about plants...')
@@ -456,7 +454,7 @@ export default function ChatPage() {
                 </div>
                 
                 <p className="input-hint">
-                    <Zap size={12} /> {language === 'te' ? 'AI ద్వారా ఆధారితం' : language === 'hi' ? 'AI द्वारा संचालित' : 'Powered by AI'} • {language === 'te' ? 'తెలుగు' : language === 'hi' ? 'हिंदी' : 'English'}
+                    {language === 'te' ? 'జవాబులు తెలుగులో' : language === 'hi' ? 'जवाब हिंदी में' : 'Answers in English'} · {language === 'te' ? 'పిచికారీ ముందు వ్యవసాయ అధికారిని అడగండి' : language === 'hi' ? 'छिड़काव से पहले कृषि अधिकारी से पूछें' : 'Check with your agriculture officer before spraying'}
                 </p>
             </div>
         </div>

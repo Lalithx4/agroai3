@@ -29,40 +29,16 @@ export async function POST(request) {
         return NextResponse.json(arResult);
     } catch (error) {
         console.error('AR scan error:', error);
-        return NextResponse.json(
-            { 
-                identified: false,
-                plant_name: 'Scan Error',
-                emoji: '❌',
-                health_emoji: '❓',
-                quick_diagnosis: 'Unable to process image',
-                instant_tip: 'Please try again with a clearer image',
-                fun_fact: '🌱 There are over 400,000 plant species on Earth!',
-                confidence: 0,
-                error: error.message,
-                animation: 'error_shake'
-            },
-            { status: 500 }
-        );
+        return NextResponse.json({ identified: false, hint: 'Point at one plant, a little closer', error: error.message }, { status: 500 });
     }
 }
 
 // GET endpoint for testing
 export async function GET() {
     return NextResponse.json({
-        status: 'AR Scanner API Ready',
+        status: 'AR scanner ready',
         endpoint: '/api/ar-scan',
         method: 'POST',
-        params: {
-            image: 'File or base64 string (required)',
-            language: 'en|hi|te (optional, default: en)'
-        },
-        features: [
-            '🎯 Instant plant identification',
-            '✨ Fun facts and superpowers',
-            '💚 Health score with emoji',
-            '💡 Quick care tips',
-            '🎨 AR animation hints'
-        ]
+        params: { image: 'File or base64 string (required)', language: 'en | hi | te (optional)' },
     });
 }

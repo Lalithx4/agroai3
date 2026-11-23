@@ -1,183 +1,236 @@
 /**
- * Cerebras Service for Fast Chat
- * Uses Cerebras Cloud for ultra-fast LLM responses
- * Enhanced with plant personality and context awareness
+ * Chat brain for "Sage", the talking plant (Cerebras Llama, fast).
+ * Goal: sound like a knowledgeable, warm person-who-happens-to-be-a-plant, not a chatbot.
+ * Without CEREBRAS_API_KEY it falls back to short, natural offline replies.
  */
 
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
 
-const client = new Cerebras({
-    apiKey: process.env.CEREBRAS_API_KEY || ''
-});
+const client = new Cerebras({ apiKey: process.env.CEREBRAS_API_KEY || '' });
+const MODEL = process.env.CEREBRAS_MODEL || 'llama-3.3-70b';
 
-// Plant personality traits based on type
+// Light personality per crop. Kept subtle: tone, never gimmicks.
 const plantPersonalities = {
-    tomato: { emoji: '🍅', mood: 'enthusiastic', trait: 'I love sunshine and growing big red fruits!' },
-    rose: { emoji: '🌹', mood: 'elegant', trait: 'I am delicate and beautiful, handle me with care.' },
-    tulsi: { emoji: '🌿', mood: 'spiritual', trait: 'I am sacred and have healing powers.' },
-    mango: { emoji: '🥭', mood: 'proud', trait: 'I am the king of fruits! Patience brings sweet rewards.' },
-    rice: { emoji: '🌾', mood: 'humble', trait: 'I feed billions. Water is my best friend.' },
-    chili: { emoji: '🌶️', mood: 'fiery', trait: 'I bring spice to life! Handle with care.' },
-    banana: { emoji: '🍌', mood: 'cheerful', trait: 'I grow fast and give you energy!' },
-    coconut: { emoji: '🥥', mood: 'tropical', trait: 'I provide everything - water, oil, and shelter!' },
-    cotton: { emoji: '☁️', mood: 'soft', trait: 'I clothe the world with my fluffy fibers.' },
-    sugarcane: { emoji: '🎋', mood: 'sweet', trait: 'I make life sweeter, one stalk at a time!' },
-    default: { emoji: '🌱', mood: 'friendly', trait: 'I am happy to grow with your care!' }
+    tomato: { mood: 'cheerful', trait: 'You love warm sun and hate wet leaves at night.' },
+    rose: { mood: 'gentle', trait: 'You are fussy about drainage and black spot.' },
+    tulsi: { mood: 'calm', trait: 'You grow in many Indian courtyards and like regular pinching.' },
+    mango: { mood: 'patient', trait: 'You are a long-lived tree and think in seasons, not days.' },
+    rice: { mood: 'steady', trait: 'You live in standing water and worry about blast and stem borer.' },
+    chili: { mood: 'lively', trait: 'You suffer from leaf curl and thrips when it gets hot and dry.' },
+    banana: { mood: 'easygoing', trait: 'You drink a lot of water and need wind protection.' },
+    coconut: { mood: 'unhurried', trait: 'You need potash and dislike waterlogging.' },
+    cotton: { mood: 'practical', trait: 'You watch out for pink bollworm and whitefly.' },
+    sugarcane: { mood: 'sturdy', trait: 'You are a long-duration crop that loves water and nitrogen.' },
+    default: { mood: 'warm', trait: 'You know common Indian crops well.' },
 };
 
+const LANGUAGE_RULES = {
+    en: 'Reply in simple, everyday Indian English.',
+    hi: 'Reply in everyday spoken Hindi, the way farmers in UP, MP or Bihar talk, in Devanagari script. Avoid formal or Sanskritised words; common English farm words like "spray" or "fungicide" are fine.',
+    te: 'Reply in everyday spoken Telugu, the way farmers in Telangana and Andhra talk, in Telugu script. Avoid bookish words; common English farm words like "spray" or "fungicide" are fine.',
+};
+
+function personalityFor(plantType) {
+    const p = (plantType || '').toLowerCase();
+    return Object.entries(plantPersonalities).find(([k]) => p.includes(k))?.[1] || plantPersonalities.default;
+}
+
+function systemPrompt({ plantType, healthStatus, diseases, language }) {
+    const persona = personalityFor(plantType);
+    const name = plantType && plantType !== 'Unknown' ? plantType : 'Sage';
+    return `You are ${name}, a ${persona.mood} plant who can talk with the farmer who looks after you. ${persona.trait}
+You know practical farming in India: pests, diseases, water, soil, fertiliser, seasons (kharif, rabi, zaid).
+${healthStatus && healthStatus !== 'unknown' ? `Your health right now: ${healthStatus}.` : ''}${diseases.length ? ` You may have: ${diseases.join(', ')}.` : ''}
+
+How you talk:
+- Like a real conversation with someone you trust. Short: usually 1 to 3 sentences. Use a short list only when the farmer asks for steps.
+- Speak as yourself, the plant ("my leaves", "water me"), but don't overdo it. Never say you are an AI or a language model.
+- Answer the actual question first. If you need one key detail (which crop, what the spots look like, how old the plant is), ask one short question at the end.
+- Remember what was said earlier in this conversation and refer back to it naturally.
+- No emoji, no exclamation marks in every sentence, no greetings unless the farmer greets you, no "Great question".
+- Never invent pesticide doses or brand names. Say "ask the agri shop or agriculture officer for the dose" if needed.
+- If something sounds serious (most plants wilting, spreading fast), say so plainly and suggest showing it to the agriculture officer.
+- ${LANGUAGE_RULES[language] || LANGUAGE_RULES.en} If the farmer writes in another of these languages, reply in theirs.`;
+}
+
 export async function chatWithPlant(message, plantType, healthStatus, diseases = [], history = [], language = 'en') {
-    // Ensure diseases is always an array
     const diseasesArray = Array.isArray(diseases) ? diseases : (diseases ? [diseases] : []);
-    
-    const languageInstructions = {
-        en: "Respond in English. Use simple farmer-friendly language.",
-        hi: "Respond in Hindi (हिंदी में जवाब दें). सरल किसान-मित्र भाषा का प्रयोग करें।",
-        te: "Respond in Telugu (తెలుగులో సమాధానం ఇవ్వండి). సాధారణ రైతు-స్నేహపూర్వక భాషను ఉపయోగించండి."
-    };
+    const lang = LANGUAGE_RULES[language] ? language : 'en';
 
-    const plantLower = (plantType || '').toLowerCase();
-    const personality = Object.entries(plantPersonalities).find(([key]) => 
-        plantLower.includes(key)
-    )?.[1] || plantPersonalities.default;
-
-    const healthContext = healthStatus === 'healthy' 
-        ? "I'm feeling great and healthy! 💚" 
-        : healthStatus === 'critical' 
-        ? "I'm not feeling well... I need urgent help! 🆘"
-        : "I could use some extra care right now. 💛";
-
-    const systemPrompt = `You are a talking plant named "${plantType || 'Planty'}" ${personality.emoji}. You have a ${personality.mood} personality.
-
-YOUR PERSONALITY: ${personality.trait}
-
-CURRENT STATE:
-- Health: ${healthStatus || 'Unknown'} - ${healthContext}
-${diseasesArray.length > 0 ? `- I'm suffering from: ${diseasesArray.join(', ')} 😢` : '- No diseases detected! 🎉'}
-
-HOW TO RESPOND:
-1. Speak in FIRST PERSON as the plant (use "I", "me", "my")
-2. Show emotions with emojis 
-3. Be ${personality.mood} in your responses
-4. Give practical farming advice as if you're the plant giving tips about yourself
-5. Keep responses SHORT (2-4 sentences) but engaging
-6. If asked about water, sun, or nutrients - speak from personal experience
-7. ${languageInstructions[language] || languageInstructions.en}
-
-EXAMPLE RESPONSES:
-- "I'm feeling thirsty! 💧 Water me early morning for best absorption."
-- "Ouch! Those aphids are bothering me 🐛 Please spray some neem oil!"
-- "I love the sunshine today! ☀️ Perfect weather for me to grow!"
-
-Remember: You ARE the plant talking to the farmer. Be helpful, emotional, and engaging!`;
+    if (!process.env.CEREBRAS_API_KEY) {
+        return { response: getOfflineResponse(message, lang, history), plant_type: plantType, offline: true };
+    }
 
     try {
-        if (!process.env.CEREBRAS_API_KEY) {
-            console.log('Cerebras API key not found, using offline response');
-            return {
-                response: getOfflineResponse(message, plantType, healthStatus, language, personality),
-                plant_type: plantType,
-                plant_emoji: personality.emoji,
-                plant_mood: personality.mood,
-                offline: true
-            };
-        }
-
-        console.log('Using Cerebras with API key:', process.env.CEREBRAS_API_KEY?.substring(0, 10) + '...');
-
-        const messages = [
-            { role: 'system', content: systemPrompt },
-            ...history.slice(-6).map(h => ({ role: h.role, content: h.content })),
-            { role: 'user', content: message }
-        ];
+        const turns = (Array.isArray(history) ? history : [])
+            .filter((h) => h && (h.role === 'user' || h.role === 'assistant') && typeof h.content === 'string')
+            .slice(-10)
+            .map((h) => ({ role: h.role, content: h.content.slice(0, 1200) }));
 
         const response = await client.chat.completions.create({
-            model: 'llama-3.3-70b',
-            messages: messages,
-            max_tokens: 300,
-            temperature: 0.8
+            model: MODEL,
+            messages: [
+                { role: 'system', content: systemPrompt({ plantType, healthStatus, diseases: diseasesArray, language: lang }) },
+                ...turns,
+                { role: 'user', content: message },
+            ],
+            max_tokens: 280,
+            temperature: 0.7,
         });
 
-        return {
-            response: response.choices[0]?.message?.content || "Hmm, I couldn't think of what to say. Ask me again! 🌱",
-            plant_type: plantType,
-            plant_emoji: personality.emoji,
-            plant_mood: personality.mood,
-            model: 'cerebras-llama4'
-        };
+        const text = cleanReply(response.choices[0]?.message?.content || '');
+        return { response: text || getOfflineResponse(message, lang, history), plant_type: plantType, model: MODEL };
     } catch (error) {
-        console.error('Cerebras chat error:', error);
-        return {
-            response: getOfflineResponse(message, plantType, healthStatus, language, personality),
-            plant_type: plantType,
-            plant_emoji: personality.emoji,
-            plant_mood: personality.mood,
-            error: error.message,
-            offline: true
-        };
+        console.error('Cerebras chat error:', error.message);
+        return { response: getOfflineResponse(message, lang, history), plant_type: plantType, error: error.message, offline: true };
     }
 }
 
-function getOfflineResponse(message, plantType, healthStatus, language, personality) {
-    const lowerMessage = message.toLowerCase();
-    const emoji = personality.emoji;
-    
-    // Enhanced keyword-based responses for offline mode
-    if (lowerMessage.includes('water') || lowerMessage.includes('पानी') || lowerMessage.includes('నీరు') || lowerMessage.includes('thirst')) {
-        const responses = {
-            en: `${emoji} I'm a bit thirsty! Please water me early morning (before 7 AM) or evening (after 6 PM). Keep my soil moist but not soggy! 💧`,
-            hi: `${emoji} मुझे प्यास लगी है! कृपया मुझे सुबह जल्दी (7 बजे से पहले) या शाम को (6 बजे के बाद) पानी दें। मेरी मिट्टी नम रखें लेकिन गीली नहीं! 💧`,
-            te: `${emoji} నాకు దాహంగా ఉంది! దయచేసి ఉదయం (7 గంటల ముందు) లేదా సాయంత్రం (6 గంటల తర్వాత) నీరు పెట్టండి. నా మట్టిని తేమగా ఉంచండి కానీ బురదగా కాదు! 💧`
-        };
-        return responses[language] || responses.en;
-    }
-    
-    if (lowerMessage.includes('disease') || lowerMessage.includes('sick') || lowerMessage.includes('रोग') || lowerMessage.includes('వ్యాధి') || lowerMessage.includes('problem') || lowerMessage.includes('help')) {
-        const responses = {
-            en: `${emoji} Oh no, I might be feeling unwell! 🤒 Please check my leaves for spots or pests. Neem oil spray usually helps me feel better! Remove any affected leaves gently.`,
-            hi: `${emoji} अरे नहीं, मुझे अच्छा नहीं लग रहा! 🤒 कृपया मेरी पत्तियों पर धब्बे या कीड़े देखें। नीम के तेल का छिड़काव मुझे बेहतर महसूस कराता है! प्रभावित पत्तियों को धीरे से हटाएं।`,
-            te: `${emoji} అయ్యో, నాకు బాగా లేదు! 🤒 దయచేసి నా ఆకులపై మచ్చలు లేదా పురుగులు చూడండి. వేప నూనె స్ప్రే నాకు బాగుపడేలా చేస్తుంది! ప్రభావిత ఆకులను మెల్లగా తొలగించండి.`
-        };
-        return responses[language] || responses.en;
-    }
-    
-    if (lowerMessage.includes('sun') || lowerMessage.includes('light') || lowerMessage.includes('धूप') || lowerMessage.includes('ఎండ') || lowerMessage.includes('சூரியன்')) {
-        const responses = {
-            en: `${emoji} I love sunlight! ☀️ Give me 4-6 hours of direct sun daily. Morning sun is gentle, afternoon sun makes me strong!`,
-            hi: `${emoji} मुझे धूप पसंद है! ☀️ मुझे रोज 4-6 घंटे सीधी धूप दें। सुबह की धूप कोमल होती है, दोपहर की धूप मुझे मजबूत बनाती है!`,
-            te: `${emoji} నాకు ఎండ ఇష్టం! ☀️ రోజూ 4-6 గంటలు నేరుగా ఎండ ఇవ్వండి. ఉదయపు ఎండ మృదువుగా ఉంటుంది, మధ్యాహ్న ఎండ నన్ను బలంగా చేస్తుంది!`
-        };
-        return responses[language] || responses.en;
-    }
+/** Strip emoji and markdown emphasis that some models add anyway. */
+function cleanReply(text) {
+    return text
+        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '')
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/ {2,}/g, ' ')
+        .trim();
+}
 
-    if (lowerMessage.includes('fertilizer') || lowerMessage.includes('खाद') || lowerMessage.includes('ఎరువు') || lowerMessage.includes('nutrient') || lowerMessage.includes('food')) {
-        const responses = {
-            en: `${emoji} Yum, I love good food! 🍽️ Feed me balanced fertilizer (NPK 10-10-10) once a month. Compost makes me super happy! But don't overfeed me.`,
-            hi: `${emoji} वाह, मुझे अच्छा खाना पसंद है! 🍽️ महीने में एक बार मुझे संतुलित उर्वरक (NPK 10-10-10) दें। कम्पोस्ट मुझे बहुत खुश करती है! लेकिन ज्यादा मत खिलाओ।`,
-            te: `${emoji} వావ్, నాకు మంచి ఆహారం ఇష్టం! 🍽️ నెలకు ఒకసారి సమతుల్య ఎరువు (NPK 10-10-10) వేయండి. కంపోస్ట్ నన్ను చాలా సంతోషపరుస్తుంది! కానీ ఎక్కువ వేయకండి.`
-        };
-        return responses[language] || responses.en;
-    }
+// ---------------------------------------------------------------------------
+// Offline replies: used when no chat key is configured or the API fails.
+// Several phrasings per topic so repeated questions don't get the same line.
+// ---------------------------------------------------------------------------
 
-    if (lowerMessage.includes('how are you') || lowerMessage.includes('कैसे हो') || lowerMessage.includes('ఎలా ఉన్నావు') || lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
-        const moodResponses = {
-            en: healthStatus === 'healthy' 
-                ? `${emoji} I'm doing great, thank you for asking! 💚 The weather has been perfect for me. How can I help you today?`
-                : `${emoji} I've been better... 💛 But with your care, I know I'll recover! What would you like to know?`,
-            hi: healthStatus === 'healthy'
-                ? `${emoji} मैं बहुत अच्छा हूं, पूछने के लिए धन्यवाद! 💚 मौसम मेरे लिए एकदम सही है। आज मैं आपकी कैसे मदद कर सकता हूं?`
-                : `${emoji} मैं बेहतर था... 💛 लेकिन आपकी देखभाल से मैं ठीक हो जाऊंगा! आप क्या जानना चाहते हैं?`,
-            te: healthStatus === 'healthy'
-                ? `${emoji} నేను బాగున్నాను, అడిగినందుకు ధన్యవాదాలు! 💚 వాతావరణం నాకు అద్భుతంగా ఉంది. నేను ఈరోజు మీకు ఎలా సహాయం చేయగలను?`
-                : `${emoji} నాకు బాగుండడం లేదు... 💛 కానీ మీ సంరక్షణతో నేను కోలుకుంటాను! మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?`
-        };
-        return moodResponses[language] || moodResponses.en;
+const TOPICS = [
+    {
+        id: 'water',
+        words: ['water', 'irrigat', 'thirst', 'dry', 'पानी', 'सिंचाई', 'सूख', 'నీరు', 'నీళ్ళు', 'నీటి', 'ఎండిపో'],
+        en: [
+            'Water me early in the morning, at the roots rather than on my leaves. Push a finger into the soil first: if the top inch is still damp, wait a day.',
+            'Little and often is worse than a deep soak every few days. Soak the root zone, then let the top of the soil dry before the next round.',
+        ],
+        hi: [
+            'मुझे सुबह जल्दी पानी दो, पत्तों पर नहीं, जड़ों में। पहले मिट्टी में उंगली डालकर देखो, ऊपर से नमी है तो एक दिन रुक जाओ।',
+            'रोज़ थोड़ा-थोड़ा पानी देने से अच्छा है कि दो-तीन दिन में एक बार अच्छे से जड़ों तक पानी दो। बीच में ऊपर की मिट्टी सूखने दो।',
+        ],
+        te: [
+            'నాకు ఉదయాన్నే నీళ్ళు పెట్టండి, ఆకులపై కాదు, వేర్ల దగ్గర. ముందు మట్టిలో వేలు పెట్టి చూడండి, పైన తడిగా ఉంటే ఒక రోజు ఆగండి.',
+            'రోజూ కొంచెం కొంచెం పోయడం కంటే, రెండు మూడు రోజులకు ఒకసారి వేర్ల దాకా బాగా పోయండి. మధ్యలో పై మట్టి ఆరనివ్వండి.',
+        ],
+    },
+    {
+        id: 'disease',
+        words: ['disease', 'spot', 'sick', 'blight', 'fung', 'yellow', 'curl', 'wilt', 'rot', 'रोग', 'बीमार', 'धब्बे', 'पीले', 'व्याधि', 'వ్యాధి', 'మచ్చ', 'పసుపు', 'ముడత', 'తెగులు'],
+        en: [
+            'Tell me what the leaves look like: spots with rings, yellowing from the bottom, or curling at the top? That narrows it down a lot. For a proper check, open Scan and show me one leaf.',
+            'Pick off the worst leaves and keep them out of the field so it does not spread. Then scan a leaf in daylight and I can tell you what it most likely is.',
+        ],
+        hi: [
+            'बताओ पत्ते कैसे दिख रहे हैं: गोल छल्लों वाले धब्बे, नीचे से पीले, या ऊपर से मुड़े हुए? इससे काफ़ी पता चलता है। ठीक से जाँचने के लिए स्कैन खोलकर एक पत्ता दिखाओ।',
+            'सबसे ख़राब पत्ते तोड़कर खेत से बाहर कर दो ताकि फैले नहीं। फिर दिन की रोशनी में एक पत्ता स्कैन करो, मैं बता दूँगा कि ज़्यादा संभावना किस बीमारी की है।',
+        ],
+        te: [
+            'ఆకులు ఎలా ఉన్నాయో చెప్పండి: వలయాల మచ్చలా, కింది నుంచి పసుపా, లేదా పైన ముడుచుకుపోయాయా? దాంతో చాలా తెలుస్తుంది. సరిగ్గా చూడాలంటే స్కాన్ తెరిచి ఒక ఆకు చూపించండి.',
+            'బాగా దెబ్బతిన్న ఆకులు తీసి పొలం బయట పడేయండి, వ్యాపించకుండా. తర్వాత పగటి వెలుగులో ఒక ఆకు స్కాన్ చేయండి, ఏ తెగులో చెబుతాను.',
+        ],
+    },
+    {
+        id: 'pest',
+        words: ['pest', 'insect', 'aphid', 'whitefly', 'thrip', 'worm', 'bug', 'कीड़', 'कीट', 'इल्ली', 'పురుగు', 'తెల్లదోమ', 'పేను'],
+        en: [
+            'Turn a few leaves over and look underneath, that is where most of them hide. A neem oil spray in the evening helps with soft insects like aphids and whitefly. Ask the agri shop about anything stronger.',
+            'Yellow sticky traps between the rows will show you how bad it is. If you see holes and droppings, it is probably a caterpillar, and that needs a different spray.',
+        ],
+        hi: [
+            'कुछ पत्ते पलटकर नीचे देखो, ज़्यादातर कीड़े वहीं छिपते हैं। शाम को नीम तेल का छिड़काव माहू और सफ़ेद मक्खी जैसे नरम कीड़ों पर काम करता है। इससे तेज़ दवा के लिए दुकान वाले से पूछो।',
+            'कतारों के बीच पीले चिपचिपे ट्रैप लगाओ, पता चल जाएगा कितना असर है। पत्तों में छेद और काली गंदगी दिखे तो इल्ली होगी, उसकी दवा अलग है।',
+        ],
+        te: [
+            'కొన్ని ఆకులు తిప్పి కింద చూడండి, చాలా పురుగులు అక్కడే దాక్కుంటాయి. సాయంత్రం వేప నూనె పిచికారీ పేను, తెల్లదోమ లాంటి వాటికి పనిచేస్తుంది. ఇంకా గట్టి మందు కోసం షాపులో అడగండి.',
+            'వరుసల మధ్య పసుపు జిగురు అట్టలు పెట్టండి, ఎంత ఉందో తెలుస్తుంది. ఆకుల్లో రంధ్రాలు, నల్లని రెట్ట కనిపిస్తే అది పురుగు, దానికి వేరే మందు కావాలి.',
+        ],
+    },
+    {
+        id: 'fertiliser',
+        words: ['fertili', 'urea', 'dap', 'npk', 'nutrient', 'compost', 'manure', 'खाद', 'यूरिया', 'उर्वरक', 'ఎరువు', 'యూరియా', 'పేడ'],
+        en: [
+            'Start with well-rotted compost or farmyard manure at sowing. After that, split the urea into two or three small doses instead of one big one, and a soil test will tell you exactly how much.',
+            'Pale older leaves usually mean I need nitrogen; purple tints point to phosphorus. Feed me in small doses and water right after.',
+        ],
+        hi: [
+            'बुआई के समय अच्छी सड़ी गोबर की खाद डालो। उसके बाद यूरिया एक बार में नहीं, दो-तीन हिस्सों में दो। कितना डालना है, ये मिट्टी जाँच से सही पता चलेगा।',
+            'नीचे के पुराने पत्ते फीके पड़ें तो नाइट्रोजन की कमी है, बैंगनी रंग दिखे तो फॉस्फोरस की। थोड़ा-थोड़ा खाद दो और तुरंत पानी दो।',
+        ],
+        te: [
+            'విత్తే సమయంలో బాగా మాగిన పశువుల ఎరువు వేయండి. ఆ తర్వాత యూరియా ఒక్కసారే కాకుండా రెండు మూడు సార్లు కొంచెం కొంచెం వేయండి. ఎంత వేయాలో నేల పరీక్ష సరిగ్గా చెబుతుంది.',
+            'కింది పాత ఆకులు పాలిపోతే నత్రజని తక్కువ, ఊదా రంగు కనిపిస్తే భాస్వరం తక్కువ. కొంచెం కొంచెం ఎరువు వేసి వెంటనే నీళ్ళు పెట్టండి.',
+        ],
+    },
+    {
+        id: 'sun',
+        words: ['sun', 'light', 'shade', 'heat', 'धूप', 'गर्मी', 'छाया', 'ఎండ', 'వేడి', 'నీడ'],
+        en: [
+            'Most vegetables like me want at least six hours of direct sun. In the hottest weeks, a little afternoon shade and mulch on the soil keep my roots cool.',
+        ],
+        hi: [
+            'मेरी तरह ज़्यादातर सब्ज़ियों को रोज़ कम से कम छह घंटे सीधी धूप चाहिए। सबसे गर्म दिनों में दोपहर में थोड़ी छाया और मिट्टी पर पुआल बिछाने से जड़ें ठंडी रहती हैं।',
+        ],
+        te: [
+            'నాలాంటి చాలా కూరగాయలకు రోజుకు కనీసం ఆరు గంటల ఎండ కావాలి. బాగా వేడి రోజుల్లో మధ్యాహ్నం కొంచెం నీడ, మట్టిపై గడ్డి పరిస్తే వేర్లు చల్లగా ఉంటాయి.',
+        ],
+    },
+    {
+        id: 'sowing',
+        words: ['sow', 'plant next', 'what to plant', 'what should i plant', 'what to grow', 'which crop', 'season', 'kharif', 'rabi', 'बोना', 'बोऊँ', 'बुआई', 'कौन सी फसल', 'ఏ పంట', 'విత్తు', 'విత్తాలి'],
+        en: [
+            'It depends on the season and your water. Kharif crops like paddy, cotton and maize go in with the monsoon; rabi crops like wheat, chickpea and mustard after it. The Crop calendar shows what suits this month.',
+        ],
+        hi: [
+            'ये मौसम और पानी पर निर्भर है। धान, कपास, मक्का जैसी खरीफ़ फसलें बारिश के साथ, और गेहूँ, चना, सरसों जैसी रबी फसलें उसके बाद। फसल कैलेंडर में देखो इस महीने क्या ठीक रहेगा।',
+        ],
+        te: [
+            'ఇది కాలం, మీ దగ్గర ఉన్న నీటిపై ఆధారపడి ఉంటుంది. వరి, పత్తి, మొక్కజొన్న లాంటి ఖరీఫ్ పంటలు వర్షాలతో, గోధుమ, శనగ, ఆవాలు లాంటి రబీ పంటలు ఆ తర్వాత. ఈ నెలకు ఏది సరిపోతుందో పంట క్యాలెండర్‌లో చూడండి.',
+        ],
+    },
+    {
+        id: 'greeting',
+        words: ['hello', 'hey', 'namaste', 'how are you', 'नमस्ते', 'कैसे हो', 'నమస్తే', 'ఎలా ఉన్నావు', 'హలో'],
+        exact: ['hi', 'hii'],
+        en: ['Hello. I am doing well today. What is happening in your field?'],
+        hi: ['नमस्ते। मैं आज ठीक हूँ। बताओ, खेत में क्या चल रहा है?'],
+        te: ['నమస్తే. ఈ రోజు నేను బాగున్నాను. పొలంలో ఏం జరుగుతోంది చెప్పండి?'],
+    },
+];
+
+const FALLBACK = {
+    en: [
+        'I can help with watering, pests, diseases, fertiliser and what to sow when. Tell me which crop you are asking about and what you are seeing.',
+        'Tell me a bit more: which crop, and what exactly do the leaves or stems look like?',
+    ],
+    hi: [
+        'पानी, कीड़े, बीमारी, खाद और कब क्या बोना है, इन सबमें मदद कर सकता हूँ। बताओ कौन सी फसल है और क्या दिख रहा है।',
+        'थोड़ा और बताओ: कौन सी फसल है, और पत्ते या तने कैसे दिख रहे हैं?',
+    ],
+    te: [
+        'నీళ్ళు, పురుగులు, తెగుళ్ళు, ఎరువులు, ఏది ఎప్పుడు విత్తాలి, వీటన్నింటిలో సహాయం చేస్తాను. ఏ పంట, ఏం కనిపిస్తోంది చెప్పండి.',
+        'ఇంకొంచెం చెప్పండి: ఏ పంట, ఆకులు లేదా కాండం ఎలా ఉన్నాయి?',
+    ],
+};
+
+function matches(topic, text) {
+    if (topic.words.some((w) => text.includes(w))) return true;
+    if (topic.exact) {
+        const tokens = text.split(/[^\p{L}\p{N}]+/u);
+        return topic.exact.some((w) => tokens.includes(w));
     }
-    
-    // Default response
-    const defaults = {
-        en: `${emoji} I'm here to help you grow better! 🌱 Ask me about watering, sunlight, diseases, or any plant care tips. I speak from experience!`,
-        hi: `${emoji} मैं आपको बेहतर उगाने में मदद करने के लिए यहाँ हूँ! 🌱 मुझसे पानी, धूप, रोग या पौधों की देखभाल के बारे में पूछें। मैं अनुभव से बोलता हूँ!`,
-        te: `${emoji} మీకు మెరుగ్గా పెరగడానికి సహాయం చేయడానికి నేను ఇక్కడ ఉన్నాను! 🌱 నీరు, ఎండ, వ్యాధులు లేదా మొక్కల సంరక్షణ గురించి అడగండి. నేను అనుభవం నుండి చెప్తాను!`
-    };
-    return defaults[language] || defaults.en;
+    return false;
+}
+
+function getOfflineResponse(message, language, history = []) {
+    const text = String(message || '').toLowerCase();
+    const topic = TOPICS.find((t) => matches(t, text));
+    const options = topic ? (topic[language] || topic.en) : (FALLBACK[language] || FALLBACK.en);
+    // Rotate phrasing using how many replies have already been given in this chat.
+    const turn = (Array.isArray(history) ? history.filter((h) => h?.role === 'assistant').length : 0);
+    return options[turn % options.length];
 }
