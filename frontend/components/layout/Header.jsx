@@ -22,7 +22,7 @@ export default function Header() {
         <header className="app-header">
             <Link href="/home" className="logo" aria-label="CropMagix home">
                 <span className="logo-mark"><Leaf size={20} strokeWidth={2.5} /></span>
-                <span className="logo-text">CropMagix</span>
+                <span className="logo-text">CropMagix <span className="logo-ai">AI</span></span>
             </Link>
 
             <nav className="header-nav" aria-label={t('mainNav')}>

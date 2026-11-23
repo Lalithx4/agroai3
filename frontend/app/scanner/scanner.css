@@ -2153,3 +2153,153 @@
         padding: 24px 28px 28px;
     }
 }
+
+/* ============ Camera off: friendly empty state ============ */
+.scanner-error { padding: 96px 20px 180px; overflow-y: auto; }
+
+.camoff {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: var(--ink);
+}
+
+.camoff-frame {
+    position: relative;
+    width: 148px;
+    height: 148px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 22px;
+    border-radius: 28px;
+    background: radial-gradient(circle at 50% 45%, rgba(140, 196, 151, 0.18), transparent 70%);
+    color: #8CC497;
+}
+
+.camoff-frame i {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border: 3px solid #8CC497;
+    opacity: 0.85;
+}
+.camoff-frame i:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; border-radius: 14px 0 0 0; }
+.camoff-frame i:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; border-radius: 0 14px 0 0; }
+.camoff-frame i:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; border-radius: 0 0 0 14px; }
+.camoff-frame i:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; border-radius: 0 0 14px 0; }
+
+.camoff-frame > svg { animation: camoff-float 3.5s ease-in-out infinite; }
+
+@keyframes camoff-float { 50% { transform: translateY(-6px) rotate(-4deg); } }
+
+.camoff-off {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #382A15;
+    color: #F2C46D;
+    box-shadow: 0 0 0 3px var(--paper);
+}
+
+.camoff h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2rem);
+    color: var(--ink);
+}
+
+.camoff-why {
+    margin-top: 10px;
+    max-width: 36ch;
+    color: var(--ink-2);
+    line-height: 1.55;
+}
+
+.camoff-actions {
+    margin-top: 24px;
+    width: 100%;
+    display: grid;
+    gap: 10px;
+}
+
+.camoff-btn {
+    min-height: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-radius: 14px;
+    border: 1px solid var(--hairline-strong, rgba(255, 253, 248, 0.2));
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.12s, background 0.2s;
+}
+
+.camoff-btn:hover { background: rgba(255, 253, 248, 0.06); }
+.camoff-btn:active { transform: scale(0.98); }
+
+.camoff-btn.is-primary {
+    border: 0;
+    background: #8CC497;
+    color: #142017;
+}
+
+.camoff-btn.is-primary:hover { background: #9DD1A7; }
+
+.camoff-tips {
+    margin-top: 28px;
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px dashed rgba(140, 196, 151, 0.35);
+    text-align: left;
+}
+
+.camoff-tips-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3, #9FB09A);
+}
+
+.camoff-tips ul {
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+.camoff-tips li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink-2);
+    font-size: 0.92rem;
+}
+
+.camoff-tips li svg { color: #F2C46D; flex: none; }
+
+@media (min-width: 768px) {
+    .camoff-actions { grid-template-columns: 1fr 1fr; }
+    .camoff-actions .camoff-btn:only-child { grid-column: 1 / -1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .camoff-frame > svg { animation: none; }
+}
+
+.capture-btn:disabled { opacity: 0.35; cursor: not-allowed; filter: grayscale(0.6); }
+.status-dot.is-off { background: #E8A33A; box-shadow: none; animation: none; }

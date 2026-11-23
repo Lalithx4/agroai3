@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
     CheckCircle2, AlertTriangle, HelpCircle, CircleAlert, Sprout, ChevronDown, Check,
-    HelpCircle as WhyIcon, PhoneIncoming, Activity, Leaf, FlaskConical, Droplets, Sun, Thermometer, Lightbulb, Mic, RotateCcw, ShieldCheck,
+    HelpCircle as WhyIcon, PhoneIncoming, PhoneCall, Activity, Leaf, FlaskConical, Droplets, Sun, Thermometer, Lightbulb, Mic, RotateCcw, ShieldCheck,
 } from 'lucide-react';
 import { scheduleCall } from '@/lib/plant-call';
 import './report.css';
@@ -34,7 +34,7 @@ const COPY = {
         watering: 'Watering', frequency: 'How often', bestTime: 'Best time',
         conditions: 'Growing conditions', temp: 'Temperature', humidity: 'Humidity', sunlight: 'Sunlight', ph: 'Soil pH',
         tips: 'Good habits', officer: 'This is a second opinion. Check doses with your agriculture officer or agri shop before spraying.',
-        saved: 'Saved to your history', again: 'Scan again', talk: 'Talk to this plant', callMe: 'Call me in 30 s', callSet: 'Your plant will call you in 30 seconds. Keep the app open.',
+        saved: 'Saved to your history', again: 'Scan again', talk: 'Talk to this plant', callMe: 'Call me in 30 s', phoneCall: 'Call my phone', phoneTitle: 'Your plant will call your phone', phoneName: 'Your name', phoneNum: 'Mobile number', phoneConsent: 'I agree to receive calls from my plant (CropMagix). I can say stop any time.', phoneGo: 'Call me now', phoneCancel: 'Cancel', phoneRinging: 'Calling your phone now. It will start in Telugu.', phoneErr: 'Could not place the call', phoneNotSetup: 'Phone calling is not set up yet.', callSet: 'Your plant will call you in 30 seconds. Keep the app open.',
     },
     hi: {
         unsure: 'अभी पक्का नहीं', healthy: 'स्वस्थ लग रहा है', serious: 'गंभीर समस्या', care: 'देखभाल चाहिए',
@@ -52,7 +52,7 @@ const COPY = {
         watering: 'सिंचाई', frequency: 'कितनी बार', bestTime: 'सबसे अच्छा समय',
         conditions: 'उगाने की स्थिति', temp: 'तापमान', humidity: 'नमी', sunlight: 'धूप', ph: 'मिट्टी pH',
         tips: 'अच्छी आदतें', officer: 'यह दूसरी राय है। छिड़काव से पहले दवा की मात्रा कृषि अधिकारी या दुकान से पूछें।',
-        saved: 'आपके इतिहास में सहेजा गया', again: 'फिर से स्कैन करें', talk: 'इस पौधे से बात करें', callMe: '30 सेकंड में कॉल करो', callSet: 'आपका पौधा 30 सेकंड में आपको कॉल करेगा। ऐप खुला रखें।',
+        saved: 'आपके इतिहास में सहेजा गया', again: 'फिर से स्कैन करें', talk: 'इस पौधे से बात करें', callMe: '30 सेकंड में कॉल करो', phoneCall: 'मेरे फ़ोन पर कॉल करो', phoneTitle: 'आपका पौधा आपके फ़ोन पर कॉल करेगा', phoneName: 'आपका नाम', phoneNum: 'मोबाइल नंबर', phoneConsent: 'मैं अपने पौधे (CropMagix) से कॉल पाने के लिए सहमत हूँ। कभी भी मना कर सकता हूँ।', phoneGo: 'अभी कॉल करो', phoneCancel: 'रद्द करें', phoneRinging: 'आपके फ़ोन पर कॉल जा रही है। शुरुआत तेलुगु में होगी, हिंदी में बोलेंगे तो हिंदी में बात होगी।', phoneErr: 'कॉल नहीं हो सकी', phoneNotSetup: 'फ़ोन कॉल अभी सेट नहीं है।', callSet: 'आपका पौधा 30 सेकंड में आपको कॉल करेगा। ऐप खुला रखें।',
     },
     te: {
         unsure: 'ఇంకా ఖచ్చితంగా తెలియదు', healthy: 'ఆరోగ్యంగా ఉంది', serious: 'తీవ్రమైన సమస్య', care: 'జాగ్రత్త అవసరం',
@@ -70,7 +70,7 @@ const COPY = {
         watering: 'నీటి పారుదల', frequency: 'ఎన్ని సార్లు', bestTime: 'మంచి సమయం',
         conditions: 'పెరిగే పరిస్థితులు', temp: 'ఉష్ణోగ్రత', humidity: 'తేమ', sunlight: 'ఎండ', ph: 'నేల pH',
         tips: 'మంచి అలవాట్లు', officer: 'ఇది రెండో అభిప్రాయం మాత్రమే. పిచికారీ ముందు మోతాదును వ్యవసాయ అధికారి లేదా షాపులో అడగండి.',
-        saved: 'మీ చరిత్రలో సేవ్ అయింది', again: 'మళ్ళీ స్కాన్ చేయండి', talk: 'ఈ మొక్కతో మాట్లాడండి', callMe: '30 సెకన్లలో కాల్ చేయి', callSet: 'మీ మొక్క 30 సెకన్లలో మీకు కాల్ చేస్తుంది. యాప్ తెరిచే ఉంచండి.',
+        saved: 'మీ చరిత్రలో సేవ్ అయింది', again: 'మళ్ళీ స్కాన్ చేయండి', talk: 'ఈ మొక్కతో మాట్లాడండి', callMe: '30 సెకన్లలో కాల్ చేయి', phoneCall: 'నా ఫోన్‌కు కాల్ చేయి', phoneTitle: 'మీ మొక్క మీ ఫోన్‌కు కాల్ చేస్తుంది', phoneName: 'మీ పేరు', phoneNum: 'మొబైల్ నంబర్', phoneConsent: 'నా మొక్క (CropMagix) నుండి కాల్స్ రావడానికి నేను అంగీకరిస్తున్నాను. ఎప్పుడైనా ఆపమని చెప్పవచ్చు.', phoneGo: 'ఇప్పుడే కాల్ చేయి', phoneCancel: 'రద్దు', phoneRinging: 'మీ ఫోన్‌కు కాల్ వెళ్తోంది. తెలుగులో మొదలవుతుంది.', phoneErr: 'కాల్ చేయలేకపోయాను', phoneNotSetup: 'ఫోన్ కాల్స్ ఇంకా సెటప్ కాలేదు.', callSet: 'మీ మొక్క 30 సెకన్లలో మీకు కాల్ చేస్తుంది. యాప్ తెరిచే ఉంచండి.',
     },
 };
 
@@ -124,6 +124,36 @@ export default function ScanReport({ result: r, image, language = 'en', onScanAg
     const c = COPY[language] || COPY.en;
     const [done, setDone] = useState(() => new Set());
     const [callSet, setCallSet] = useState(false);
+    const [phoneOpen, setPhoneOpen] = useState(false);
+    const [phoneState, setPhoneState] = useState('');   // '' | sending | ringing | error text
+    const [farmer, setFarmer] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('cropmagix-farmer') || '{}'); } catch { return {}; }
+    });
+
+    // Real phone call through the Sarvam "CropMagix" agent, with this scan as its context.
+    const callPhone = async (e) => {
+        e.preventDefault();
+        localStorage.setItem('cropmagix-farmer', JSON.stringify(farmer));
+        setPhoneState('sending');
+        try {
+            const res = await fetch('/api/call', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phone: farmer.phone, farmerName: farmer.name ? `${farmer.name} garu` : 'farmer', consent: !!farmer.consent,
+                    plant: r.plant_type || r.plant_name, issue: r.diagnosis?.primary_issue || r.diseases?.[0]?.name || 'none',
+                    healthStatus: r.health_status === 'healthy' ? 'healthy' : r.health_status === 'critical' ? 'serious' : 'needs_attention',
+                    confidence: r.confidence, todo: steps, reason: 'follow_up',
+                }),
+            });
+            const j = await res.json();
+            if (res.status === 501) throw new Error(c.phoneNotSetup);
+            if (!res.ok) throw new Error(j.detail || j.error || c.phoneErr);
+            setPhoneState('ringing');
+        } catch (err) {
+            setPhoneState(`${c.phoneErr}: ${err.message}`);
+        }
+    };
 
     // "Your plant calls you back": ring in 30 s, answered in the live camera.
     const callMe = () => {
@@ -307,10 +337,25 @@ export default function ScanReport({ result: r, image, language = 'en', onScanAg
 
             <p className="rep-officer"><ShieldCheck size={16} aria-hidden="true" /> {c.officer}</p>
 
+            {phoneOpen && (
+                <form className="rep-phone" onSubmit={callPhone}>
+                    <h4><PhoneCall size={18} aria-hidden="true" /> {c.phoneTitle}</h4>
+                    <label>{c.phoneName}<input value={farmer.name || ''} onChange={(e) => setFarmer({ ...farmer, name: e.target.value })} autoComplete="name" /></label>
+                    <label>{c.phoneNum}<input value={farmer.phone || ''} onChange={(e) => setFarmer({ ...farmer, phone: e.target.value })} inputMode="tel" autoComplete="tel" placeholder="98765 43210" required /></label>
+                    <label className="rep-consent"><input type="checkbox" checked={!!farmer.consent} onChange={(e) => setFarmer({ ...farmer, consent: e.target.checked })} required /> {c.phoneConsent}</label>
+                    {phoneState && phoneState !== 'sending' && <p className={phoneState === 'ringing' ? 'rep-ok' : 'rep-err'} role="status">{phoneState === 'ringing' ? c.phoneRinging : phoneState}</p>}
+                    <div>
+                        <button type="button" className="nb-btn nb-btn-secondary" onClick={() => { setPhoneOpen(false); setPhoneState(''); }}>{c.phoneCancel}</button>
+                        <button type="submit" className="nb-btn nb-btn-primary" disabled={phoneState === 'sending'}><PhoneCall size={16} aria-hidden="true" /> {c.phoneGo}</button>
+                    </div>
+                </form>
+            )}
+
             <footer className="rep-actions">
                 <span className="rep-saved"><Check size={14} aria-hidden="true" /> {callSet ? c.callSet : c.saved}</span>
                 <div>
                     <button type="button" className="nb-btn nb-btn-secondary" onClick={onScanAgain}><RotateCcw size={16} aria-hidden="true" /> {c.again}</button>
+                    <button type="button" className="nb-btn nb-btn-secondary" onClick={() => setPhoneOpen(true)}><PhoneCall size={16} aria-hidden="true" /> {c.phoneCall}</button>
                     <button type="button" className="nb-btn nb-btn-secondary" onClick={callMe} disabled={callSet}><PhoneIncoming size={16} aria-hidden="true" /> {c.callMe}</button>
                     {onTalk && <button type="button" className="nb-btn nb-btn-primary" onClick={onTalk}><Mic size={16} aria-hidden="true" /> {c.talk}</button>}
                 </div>

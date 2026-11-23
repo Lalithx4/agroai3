@@ -41,6 +41,87 @@ import {
     Stethoscope
 } from 'lucide-react';
 import { Sprout as NbSprout, Info as NbInfo, Target as NbTarget } from 'lucide-react';
+import { ScanSearch, ImageUp, RefreshCw, CameraOff as CameraOffIcon } from 'lucide-react';
+
+const CAM_COPY = {
+    en: {
+        title: 'Let\'s look at a leaf',
+        why: {
+            denied: 'Camera permission is blocked. Tap the lock icon in the address bar, allow Camera, then try again.',
+            none: 'No camera was found on this device. Upload a clear photo of the leaf instead.',
+            insecure: 'The camera only works on a secure (https) page. Upload a photo, or open the https link.',
+            busy: 'The camera is busy in another app or tab. Close it and try again.',
+        },
+        retry: 'Try camera again',
+        upload: 'Upload a leaf photo',
+        tipsTitle: 'For the best answer',
+        tips: ['Daylight, no flash', 'One leaf, close up', 'Show the spots clearly'],
+    },
+    hi: {
+        title: 'आइए एक पत्ती देखें',
+        why: {
+            denied: 'कैमरे की अनुमति बंद है। एड्रेस बार में ताले पर टैप करें, कैमरा चालू करें, फिर दोबारा कोशिश करें।',
+            none: 'इस डिवाइस में कैमरा नहीं मिला। पत्ती की साफ़ फोटो अपलोड करें।',
+            insecure: 'कैमरा सिर्फ़ सुरक्षित (https) पेज पर चलता है। फोटो अपलोड करें या https लिंक खोलें।',
+            busy: 'कैमरा किसी दूसरे ऐप या टैब में चल रहा है। उसे बंद करके दोबारा कोशिश करें।',
+        },
+        retry: 'कैमरा फिर से चालू करें',
+        upload: 'पत्ती की फोटो अपलोड करें',
+        tipsTitle: 'सबसे अच्छे जवाब के लिए',
+        tips: ['दिन की रोशनी, फ्लैश नहीं', 'एक पत्ती, पास से', 'धब्बे साफ़ दिखें'],
+    },
+    te: {
+        title: 'ఒక ఆకును చూద్దాం',
+        why: {
+            denied: 'కెమెరా అనుమతి ఆపివేయబడింది. అడ్రస్ బార్‌లో తాళం గుర్తుపై నొక్కి, కెమెరాను అనుమతించి, మళ్లీ ప్రయత్నించండి.',
+            none: 'ఈ పరికరంలో కెమెరా కనిపించలేదు. ఆకు యొక్క స్పష్టమైన ఫోటోను అప్‌లోడ్ చేయండి.',
+            insecure: 'కెమెరా సురక్షిత (https) పేజీలో మాత్రమే పనిచేస్తుంది. ఫోటో అప్‌లోడ్ చేయండి లేదా https లింక్ తెరవండి.',
+            busy: 'కెమెరా మరో యాప్ లేదా ట్యాబ్‌లో వాడుకలో ఉంది. దాన్ని మూసి మళ్లీ ప్రయత్నించండి.',
+        },
+        retry: 'కెమెరాను మళ్లీ ప్రయత్నించండి',
+        upload: 'ఆకు ఫోటో అప్‌లోడ్ చేయండి',
+        tipsTitle: 'మంచి జవాబు కోసం',
+        tips: ['పగటి వెలుతురు, ఫ్లాష్ వద్దు', 'ఒక ఆకు, దగ్గరగా', 'మచ్చలు స్పష్టంగా కనిపించాలి'],
+    },
+};
+
+/** Shown when the live camera cannot start: says why, offers retry and upload. */
+function CameraOff({ reason, language, onRetry, onUpload }) {
+    const c = CAM_COPY[language] || CAM_COPY.en;
+    const TIP_ICONS = [Sun, Leaf, ScanSearch];
+    return (
+        <div className="scanner-error">
+            <div className="camoff">
+                <div className="camoff-frame" aria-hidden="true">
+                    <i /><i /><i /><i />
+                    <Leaf size={56} strokeWidth={1.4} />
+                    <span className="camoff-off"><CameraOffIcon size={18} /></span>
+                </div>
+                <h2>{c.title}</h2>
+                <p className="camoff-why">{c.why[reason] || c.why.busy}</p>
+                <div className="camoff-actions">
+                    <button type="button" className="camoff-btn is-primary" onClick={onUpload}>
+                        <ImageUp size={20} aria-hidden="true" /> {c.upload}
+                    </button>
+                    {reason !== 'none' && reason !== 'insecure' && (
+                        <button type="button" className="camoff-btn" onClick={onRetry}>
+                            <RefreshCw size={18} aria-hidden="true" /> {c.retry}
+                        </button>
+                    )}
+                </div>
+                <div className="camoff-tips">
+                    <span className="camoff-tips-title">{c.tipsTitle}</span>
+                    <ul>
+                        {c.tips.map((tip, i) => {
+                            const Icon = TIP_ICONS[i];
+                            return <li key={tip}><Icon size={16} aria-hidden="true" /> {tip}</li>;
+                        })}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function ScannerPage() {
     const { t, language } = useLanguage();
@@ -84,9 +165,13 @@ export default function ScannerPage() {
             setStream(mediaStream);
             if (videoRef.current) videoRef.current.srcObject = mediaStream;
             setCameraError(false);
-        } catch {
-            setCameraError(true);
-            showToast('Camera access denied', 'error');
+        } catch (err) {
+            // Why the camera is off decides what we tell the farmer.
+            const reason = !window.isSecureContext ? 'insecure'
+                : err?.name === 'NotAllowedError' || err?.name === 'SecurityError' ? 'denied'
+                : err?.name === 'NotFoundError' || err?.name === 'OverconstrainedError' ? 'none'
+                : 'busy';
+            setCameraError(reason);
         }
     };
 
@@ -163,20 +248,12 @@ export default function ScannerPage() {
         <div className="scanner-page">
             {/* Fullscreen Camera */}
             {cameraError ? (
-                <div className="scanner-error">
-                    <div className="scanner-error-content">
-                        <Camera size={64} strokeWidth={1.5} />
-                        <h2>Camera Unavailable</h2>
-                        <p>Please allow camera access or upload an image</p>
-                        <button
-                            className="scanner-upload-btn"
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            <FolderOpen size={20} />
-                            Upload Image
-                        </button>
-                    </div>
-                </div>
+                <CameraOff
+                    reason={cameraError}
+                    language={language}
+                    onRetry={startCamera}
+                    onUpload={() => fileInputRef.current?.click()}
+                />
             ) : (
                 <video
                     ref={videoRef}
@@ -195,8 +272,8 @@ export default function ScannerPage() {
                 </button>
 
                 <div className="scanner-status-pill">
-                    <span className={`status-dot ${isAnalyzing ? 'analyzing' : isARMode ? 'ar-active' : ''}`} />
-                    <span>{isAnalyzing ? 'Analyzing…' : isARMode ? 'Live view' : 'Ready to scan'}</span>
+                    <span className={`status-dot ${isAnalyzing ? 'analyzing' : isARMode ? 'ar-active' : cameraError ? 'is-off' : ''}`} />
+                    <span>{isAnalyzing ? 'Analyzing…' : isARMode ? 'Live view' : cameraError ? 'Camera off' : 'Ready to scan'}</span>
                 </div>
 
                 <button 
