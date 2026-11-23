@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Plant Is Calling</title>
+<style>
+:root{--paper:#F6F1E7;--paper2:#EDE5D3;--ink:#1F2A22;--leaf:#2F5D3A;--tur:#D9A21B;--terra:#B5452A;--mute:#5d6a5f;--line:#cfc4ad}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 "Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif}
+h1,h2,h3,.serif{font-family:Georgia,"Times New Roman",serif;font-weight:normal}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+a{color:var(--leaf)}
+/* cover */
+.cover{padding:56px 0 40px;border-bottom:2px solid var(--ink)}
+.stamp{display:inline-block;border:2px solid var(--terra);color:var(--terra);padding:2px 10px;font:12px/1.6 ui-monospace,Consolas,monospace;letter-spacing:.12em;text-transform:uppercase;transform:rotate(-2deg)}
+.cover h1{font-size:clamp(38px,8vw,84px);line-height:.98;margin:18px 0 12px;letter-spacing:-.01em}
+.cover h1 em{color:var(--leaf)}
+.cover p.lede{max-width:640px;font-size:18px;color:var(--mute)}
+.meta{display:flex;flex-wrap:wrap;gap:8px 24px;font:13px ui-monospace,Consolas,monospace;margin-top:20px}
+.meta b{color:var(--terra);font-weight:normal}
+.phone{float:right;width:220px;margin:0 0 16px 24px;border:2px solid var(--ink);border-radius:30px;padding:18px 14px 22px;background:var(--ink);color:var(--paper);text-align:center;box-shadow:6px 6px 0 var(--tur)}
+.phone .sm{font-size:12px;opacity:.7;letter-spacing:.1em;text-transform:uppercase}
+.avatar{width:84px;height:84px;margin:18px auto 10px;border-radius:50%;background:var(--leaf);display:grid;place-items:center;position:relative}
+.avatar:before,.avatar:after{content:"";position:absolute;inset:-8px;border:2px solid var(--tur);border-radius:50%;animation:ring 1.8s infinite}
+.avatar:after{animation-delay:.9s}
+@keyframes ring{0%{transform:scale(.9);opacity:1}100%{transform:scale(1.5);opacity:0}}
+.phone .who{font-family:Georgia,serif;font-size:21px}
+.btns{display:flex;justify-content:space-around;margin-top:22px}
+.btn{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;border:0;cursor:pointer}
+.btn.no{background:var(--terra)}.btn.yes{background:var(--leaf)}
+@media (prefers-reduced-motion:reduce){.avatar:before,.avatar:after{animation:none}}
+@media (max-width:640px){.phone{float:none;margin:0 auto 24px}}
+/* nav */
+nav.dial{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+nav.dial ol{list-style:none;margin:0 auto;padding:8px 16px;display:flex;gap:6px;overflow-x:auto;max-width:1080px}
+nav.dial a{display:block;white-space:nowrap;text-decoration:none;color:var(--ink);font:13px ui-monospace,Consolas,monospace;border:1px solid var(--ink);padding:4px 10px;border-radius:14px}
+nav.dial a:hover{background:var(--ink);color:var(--paper)}
+section{padding:56px 0;border-bottom:1px dashed var(--line)}
+.kick{font:12px ui-monospace,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--terra)}
+section h2{font-size:clamp(28px,5vw,44px);margin:6px 0 8px;line-height:1.1}
+.q{font-family:Georgia,serif;font-style:italic;color:var(--mute);font-size:18px;max-width:700px;margin:0 0 28px}
+.n{font:11px ui-monospace,Consolas,monospace;color:var(--mute)}
+/* 1 timeline */
+.day{position:relative;margin-left:64px;border-left:3px solid var(--ink)}
+.slot{position:relative;padding:0 0 16px 22px}
+.slot .t{position:absolute;left:-70px;top:0;width:56px;text-align:right;font:13px ui-monospace,Consolas,monospace;color:var(--leaf)}
+.slot:before{content:"";position:absolute;left:-8px;top:5px;width:13px;height:13px;border-radius:50%;background:var(--paper);border:3px solid var(--leaf)}
+.slot.night:before{border-color:var(--ink);background:var(--ink)}
+.slot .c{background:#fffaf0;border:1px solid var(--line);padding:8px 12px;border-radius:2px 12px 12px 12px}
+.slot .tag{font:11px ui-monospace,Consolas,monospace;color:var(--terra);text-transform:uppercase;letter-spacing:.08em}
+.anytime{margin-top:28px}
+.anytime h3{font-size:20px;margin:0 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{flex:1 1 260px;border:1.5px solid var(--ink);padding:10px 12px;background:var(--paper2)}
+/* 2 voicemail transcript */
+.vm{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.bubble{background:var(--leaf);color:var(--paper);padding:12px 14px;border-radius:14px 14px 14px 2px;position:relative}
+.bubble:nth-child(3n+2){background:var(--ink)}
+.bubble:nth-child(5n+4){background:#fffaf0;color:var(--ink);border:1.5px solid var(--leaf)}
+.bubble .n{color:inherit;opacity:.7}
+.wave{display:flex;gap:2px;height:14px;align-items:flex-end;margin-bottom:6px}
+.wave i{width:3px;background:var(--tur);display:block}
+/* 3 flip */
+.flips{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.flip{perspective:900px;height:170px;cursor:pointer;background:none;border:0;padding:0;text-align:left;font:inherit;color:inherit}
+.inner{position:relative;width:100%;height:100%;transition:transform .55s;transform-style:preserve-3d}
+.flip.on .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;padding:14px;display:flex;flex-direction:column;border:2px solid var(--ink)}
+.front{background:#fffaf0}
+.front .miss{color:var(--terra);font:12px ui-monospace,Consolas,monospace;text-transform:uppercase;letter-spacing:.1em}
+.front p{font-family:Georgia,serif;font-size:18px;margin:8px 0 auto}
+.back{background:var(--leaf);color:var(--paper);transform:rotateY(180deg);border-color:var(--leaf)}
+.back .miss{color:var(--tur);font:12px ui-monospace,Consolas,monospace;text-transform:uppercase;letter-spacing:.1em}
+.back p{margin:8px 0 auto}
+.hint{font-size:12px;opacity:.65}
+.flipall{margin-bottom:16px;font:13px ui-monospace,Consolas,monospace;background:var(--ink);color:var(--paper);border:0;padding:8px 14px;cursor:pointer}
+/* 4 stage */
+.stage{background:var(--ink);color:var(--paper);padding:28px 20px;border-radius:4px;position:relative}
+.stage h3{color:var(--tur);margin:0 0 6px;font-size:22px}
+.curtain{height:14px;background:repeating-linear-gradient(90deg,var(--terra) 0 18px,#8f3420 18px 36px);margin:-28px -20px 24px;border-radius:4px 4px 0 0}
+.acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:28px}
+.act{border:1px solid #4a574d;padding:12px}
+.act .n{color:var(--tur)}
+.path{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:20px 0 28px}
+.ph{padding:16px;border:2px solid var(--ink);position:relative;background:#fffaf0}
+.ph+.ph{border-left:0}
+.ph.now{background:var(--leaf);color:var(--paper);border-color:var(--leaf)}
+.ph h4{font-family:Georgia,serif;font-weight:normal;font-size:20px;margin:4px 0}
+.ph:not(:last-child):after{content:"";position:absolute;right:-13px;top:50%;margin-top:-12px;border:12px solid transparent;border-left-color:var(--ink);border-right:0;z-index:2}
+.ph.now:after{border-left-color:var(--leaf)!important}
+@media (max-width:700px){.path{grid-template-columns:1fr}.ph+.ph{border-left:2px solid var(--ink);border-top:0}.ph:not(:last-child):after{right:50%;top:auto;bottom:-13px;margin:0 -12px 0 0;border:12px solid transparent;border-top-color:var(--ink);border-bottom:0}.ph.now:after{border-top-color:var(--leaf)!important;border-left-color:transparent!important}}
+.routes{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:24px}
+.route{border-top:5px solid var(--tur);background:var(--paper2);padding:12px}
+.route.a{border-color:var(--leaf)}.route.b{border-color:var(--terra)}
+.list2{columns:2 300px;column-gap:28px;padding:0;list-style:none}
+.list2 li{break-inside:avoid;padding:8px 0;border-bottom:1px solid var(--line)}
+/* 5 trust meter */
+.trust{display:grid;grid-template-columns:1fr;gap:10px}
+.tr{display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:center}
+.bar{height:10px;background:var(--paper2);position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--tur)}
+.tr .lab{font:12px ui-monospace,Consolas,monospace;color:var(--leaf)}
+@media (max-width:560px){.tr{grid-template-columns:1fr;gap:4px}}
+/* climax */
+.connected{background:var(--leaf);color:var(--paper);border-bottom:0}
+.connected .kick{color:var(--tur)}
+.timer{font:clamp(40px,10vw,96px)/1 ui-monospace,Consolas,monospace;color:var(--tur)}
+.ins{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin:28px 0}
+.ins div{border-top:2px solid var(--tur);padding-top:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:18px 0;font:14px ui-monospace,Consolas,monospace}
+.flow span{border:1.5px solid var(--paper);padding:6px 10px}
+.flow b{color:var(--tur);font-weight:normal}
+.decision{background:var(--paper);color:var(--ink);padding:22px;border-left:8px solid var(--terra);font-family:Georgia,serif;font-size:20px}
+footer{padding:28px 0 48px;font:13px ui-monospace,Consolas,monospace;color:var(--mute)}
+</style>
+</head>
+<body>
+<header class="wrap cover">
+  <div class="phone" aria-hidden="true">
+    <div class="sm">Incoming call</div>
+    <div class="avatar"><svg width="44" height="44" viewBox="0 0 44 44"><path d="M22 40V18" stroke="#F6F1E7" stroke-width="3" fill="none"/><path d="M22 22C12 22 8 14 8 8c8 0 14 4 14 14zM22 18c0-8 6-13 14-13 0 8-5 13-14 13z" fill="#F6F1E7"/></svg></div>
+    <div class="who">Tomato</div>
+    <div class="sm">East field · CropMagix</div>
+    <div class="btns"><span class="btn no"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#fff" stroke-width="2.5"/></svg></span><span class="btn yes"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M4 10l4 4 8-9" stroke="#fff" stroke-width="2.5" fill="none"/></svg></span></div>
+  </div>
+  <span class="stamp">Brainstorm keepsake · 23 Nov 2026</span>
+  <h1>Ramaiah garu,<br>your <em>tomato</em><br>is calling.</h1>
+  <p class="lede">One session on a single provocation: what if the AI in CropMagix stopped waiting to be opened and picked up the phone instead? Five techniques, 104 ideas, one feature worth building for the judges.</p>
+  <div class="meta"><span><b>Topic</b> AI talking plant phones the farmer</span><span><b>Goal</b> impress hackathon judges on the existing Sarvam + Bedrock stack</span><span><b>Ideas</b> 104</span></div>
+</header>
+<nav class="dial"><ol>
+  <li><a href="#ring">1 · Ring</a></li><li><a href="#voice">2 · The plant's voice</a></li><li><a href="#missed">3 · Missed calls</a></li><li><a href="#stage">4 · Booth stage</a></li><li><a href="#trust">5 · Why pick up</a></li><li><a href="#connected">Connected</a></li>
+</ol></nav>
+<main>
+<section id="ring"><div class="wrap">
+  <div class="kick">Technique 1 · Role-play · The ring schedule</div>
+  <h2>A day in Ramaiah garu's life</h2>
+  <p class="q">When would a call actually help? We walked through his day and pinned every useful ring to the clock.</p>
+  <div class="day" id="day"></div>
+  <div class="anytime"><h3>Rings on the season's calendar, not the clock</h3><div class="chips" id="anytime"></div></div>
+</div></section>
+
+<section id="voice"><div class="wrap">
+  <div class="kick">Technique 2 · What-if provocations · Voice notes from the field</div>
+  <h2>What if the plant itself could phone?</h2>
+  <p class="q">The caller stops being a company and becomes the crop. Twenty-four voice notes on what that plant sounds like.</p>
+  <div class="vm" id="vm"></div>
+</div></section>
+
+<section id="missed"><div class="wrap">
+  <div class="kick">Technique 3 · Reverse brainstorm · Missed calls</div>
+  <h2>Every way it could go wrong, flipped</h2>
+  <p class="q">How could AI calls fail or annoy? Each card is a failure. Tap it to turn it over and read the safeguard.</p>
+  <button class="flipall" id="flipall" type="button">Flip all 20</button>
+  <div class="flips" id="flips"></div>
+</div></section>
+
+<section id="stage"><div class="wrap">
+  <div class="kick">Technique 4 · Demo theatre + build path</div>
+  <h2>Three minutes at the booth</h2>
+  <p class="q">What wins the judges' attention, and how do we actually build it?</p>
+  <div class="stage">
+    <div class="curtain"></div>
+    <h3>The act, in order</h3>
+    <div class="acts" id="acts"></div>
+    <h3>Three ways to place the call</h3>
+    <div class="routes" id="routes"></div>
+  </div>
+  <h3 class="serif" style="font-size:24px;margin:32px 0 0">Build path</h3>
+  <div class="path" id="path"></div>
+  <h3 class="serif" style="font-size:24px;margin:0 0 6px">Props, backups and the pitch</h3>
+  <ul class="list2" id="props"></ul>
+</div></section>
+
+<section id="trust"><div class="wrap">
+  <div class="kick">Technique 5 · Emotion &amp; trust lens</div>
+  <h2>Why would he pick up, and believe it?</h2>
+  <p class="q">Ten ways the caller earns trust, ordered roughly from the first second of the call to the last.</p>
+  <div class="trust" id="trustl"></div>
+</div></section>
+
+<section id="connected" class="connected"><div class="wrap">
+  <div class="kick">Synthesis · Call connected</div>
+  <div class="timer" id="timer">00:00</div>
+  <h2>One feature: your plant calls you back</h2>
+  <div class="flow"><span>Scan</span><b>&rarr;</b><span>seconds later it rings</span><b>&rarr;</b><span>"Tomato, east field, calling"</span><b>&rarr;</b><span>hands-free voice talk</span><b>&rarr;</b><span>call log + SMS summary</span><b>&rarr;</b><span>follow-up photo</span></div>
+  <div class="ins">
+    <div><h3>The shape</h3><p>Role-play ideas (follow-up, recovery check) give it purpose. What-if ideas (plant as caller, memory, mood voice) give it soul. Reverse-brainstorm safeguards (opt-in, quiet hours, confidence guard on calls) make it credible. The conversation reuses the existing PlantVoice loop.</p></div>
+    <div><h3>Two phases</h3><p><b>Phase 1, hackathon, no telephony account:</b> in-app incoming-call UI, ringtone, vibration and a background Notification, triggered by "Call me in 30 s" on the report and by a rules trigger engine. Runs on Sarvam STT/TTS + Bedrock/Sarvam chat already in the code.<br><b>Phase 2, after:</b> real PSTN calls via Exotel (India) or Twilio with streaming audio to Sarvam, which also reaches feature-phone farmers. That is the inclusion story.</p></div>
+    <div><h3>Hidden links</h3><p>"Judges think it's pre-recorded" is solved by the live-language idea: let a judge pick Telugu or Hindi and ask anything mid-call. "Feels robotic" latency is solved by streaming TTS plus barge-in, which also delivers the ask that it talk like a person.</p></div>
+  </div>
+  <div class="decision"><span class="kick" style="display:block;font-family:ui-monospace,Consolas,monospace;font-size:12px">Decision</span>Build Phase 1, "Plant calls you back": incoming-call screen, call conversation, call log and follow-up reminder inside CropMagix. Document Phase 2 Exotel/Twilio real calls as the roadmap.</div>
+</div></section>
+</main>
+<footer class="wrap">CropMagix · brainstorm session, autonomous mode · 5 techniques · 104 ideas · 3 insights · 1 decision</footer>
+
+<script>
+var N=0;function no(){N++;return '<span class="n">#'+String(N).padStart(3,'0')+'</span> '}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+// 1 role-play: [time, tag, text] ; time null => anytime
+var R=[
+["05:30","weather","Weather call: \"Heavy rain by 2 PM, don't spray today\", before he leaves for the field"],
+["07:00","follow-up","Follow-up call 3 days after a scan: the plant asks \"Did you remove my spotted leaves? Send me a new photo\""],
+["07:15","recovery","Recovery-check call: compares new photo to old and says \"spots down from 30% to 12%, it's working\""],
+["08:00","outbreak","Outbreak alert call: neighbours' scans show late blight 5 km away, \"check your potatoes today\""],
+["19:30","reminder","Evening reminder call: \"You said you'd spray neem oil tonight, done?\" Farmer says yes/no by voice, logged"],
+["any","access","Missed-call model: farmer gives a free missed call, the AI calls back (zero cost to farmer, a common Indian pattern)"],
+["09:00","literacy","Call reads the Scan report aloud for farmers who can't read the screen"],
+["10:00","market","Mandi price call: \"Tomato is ₹18/kg at Bowenpally today, up ₹3, harvest the red ones\""],
+["11:00","water","Irrigation-slot call timed to the village's power-supply schedule"],
+["12:30","money","Loan-anxiety call: estimated rupee loss vs cost of treatment, framed calmly (labelled as estimate)"],
+["season","calendar","Calendar call: \"Sowing window for rabi groundnut opens this week\""],
+["season","fertiliser","Fertiliser-day call on the day the split urea dose is due"],
+["16:00","weather","Post-hailstorm check-in call after severe weather in his mandal"],
+["17:00","family","Call the son in the city (Family Link) with a summary in English when the plant is serious"],
+["14:00","officer","Call the agriculture officer automatically with a structured case when verdict is Serious and the farmer agrees"],
+["season","pests","Pest-season call when thrips/whitefly risk rises with the temperature + humidity forecast"],
+["season","harvest","Pre-harvest call: \"Stop spraying now, 7 days pre-harvest interval\""],
+["season","insurance","Insurance-deadline call (PMFBY enrolment closing): practical, high value"],
+["15:00","soil","Soil-test result call explaining the report in Telugu"],
+["any","inbound","\"Talk to my plant\" inbound number: farmer dials any time, describes the problem, gets voice diagnosis"],
+["Mon 06:30","bulletin","Weekly 60-second crop briefing call every Monday, like a radio bulletin personalised to his crops"],
+["18:00","his choice","Call schedules the farmer chooses by voice: \"call me after 6\""],
+["any","village","Group call to a farmer producer organisation (FPO) for a village-wide alert"],
+["13:00","WhatsApp","Call where the plant asks him to send a photo on WhatsApp and continues the diagnosis"],
+["season","festival","Festival/holiday aware: no calls during Sankranti morning, it wishes him instead"]];
+var timed=[],other=[];R.forEach(function(r){var h=no()+esc(r[2]);(/\d\d:\d\d/.test(r[0])?timed:other).push([r[0],r[1],h])});
+timed.sort(function(a,b){return a[0].slice(-5).localeCompare(b[0].slice(-5))});
+document.getElementById('day').innerHTML=timed.map(function(r){var hr=+r[0].slice(-5,-3);return '<div class="slot'+(hr<6||hr>=19?' night':'')+'"><span class="t">'+r[0]+'</span><div class="c"><div class="tag">'+r[1]+'</div>'+r[2]+'</div></div>'}).join('');
+document.getElementById('anytime').innerHTML=other.map(function(r){return '<div class="chip"><div class="n" style="color:var(--terra)">'+(r[0]=='any'?'ANY TIME':'IN SEASON')+' · '+r[1]+'</div>'+r[2]+'</div>'}).join('');
+// 2 what-if
+var W=["The caller ID shows the crop: \"Tomato (Field 2) calling\". The plant is the caller, not a company","Each crop has its own voice and mood: a sick plant sounds tired (Bulbul pace/pitch by severity, already built)","Plant remembers the last conversation: \"Last week you told me the leaves curled, is it better?\"","Two plants on one call: tomato and chilli argue over water needs (conference call)","The plant calls to say thank you when the scan shows recovery: emotional payoff","Barge-in: farmer can interrupt the plant mid-sentence and it stops and listens, like a person","Code-mixed speech: farmer answers half Telugu half English and the plant follows (Saaras codemix)","Plant asks one question at a time and waits. No IVR \"press 1\" menus, ever","Voice-only diagnosis on the call: farmer describes symptoms, plant narrows down with 3 questions","The plant calls in the farmer's dialect: Telangana vs coastal Andhra Telugu","Call transcript turns into a to-do list in the app automatically","\"Hold the phone to the leaf\" is not possible on voice; instead the call sends an SMS link that opens the camera","Plant sings a short lullaby for kids during the call (Kids mode): demo delight, optional","Plant has a name the farmer gives it (\"Lakshmi\") and uses it on calls","Ringtone is a field sound: birds and wind, recognisable as \"my plant is calling\"","AI calls in a calm voice when news is bad; honest \"I am not sure\" stays on calls too","After the call, an SMS summary in Telugu with the 2 actions","Call escalates: if no answer, tries again at a better time, then sends SMS","In-call language switch: \"Hindi mein bolo\" switches instantly","Plant reports on neighbours anonymously: \"4 farms near you have the same problem\"","Farmer can say \"call me tomorrow\" and the plant schedules itself","Voice-biometrics-free: identifies the farmer by phone number only, no login ever","The plant calls the agri shop on the farmer's behalf to check if a fungicide is in stock","Live call shown on the projector at the booth with captions and the animated plant face"];
+document.getElementById('vm').innerHTML=W.map(function(t,i){var w='';for(var k=0;k<22;k++){w+='<i style="height:'+(3+((i*7+k*13)%11))+'px"></i>'}return '<div class="bubble"><div class="wave">'+w+'</div>'+no()+esc(t)+'</div>'}).join('');
+// 3 reverse
+var F=[["Calls at the wrong time","Farmer sets quiet hours by voice, default 7 AM–8 PM"],["Sounds like a spam or loan robocall","First sentence names the crop and the farmer's own scan"],["Wrong diagnosis spoken confidently","Confidence guard on calls; below 70% it says \"not sure, send a photo\""],["Pesticide dose hallucinated","Doses only from a verified table, else \"ask the officer\""],["Farmer can't hear in the field","Slower pace, repeats the key action at the end, SMS backup"],["Costs a lot per call","Short calls (under 90 s), most nudges as voice notes instead"],["Farmer never consented","Explicit opt-in in app, \"Can the plant call you?\", with a test call"],["Latency makes it feel robotic","Stream TTS, filler \"hmm, let me think\" under 1 s"],["Echo and background noise in the field","Noise suppression + confirm \"did you say spray?\""],["Number shared with third parties","Numbers stay in the app's DB, never sold, delete on request"],["Farmer feels watched","Calls only about crops he scanned or asked about"],["Too many calls","Max 2 proactive calls a week unless there's an urgent outbreak"],["Network drops mid-call","Resume \"as I was saying\" on callback"],["TRAI DND rules","Transactional opt-in category; register sender properly before real launch"],["Judges think it's pre-recorded","Let a judge pick the language and ask anything live"],["No telephony account at the hackathon","In-app \"call\" (WebRTC-style screen) works without a phone number"],["AI talks over the farmer","Voice activity detection with barge-in"],["Farmer answers in an unsupported language","Polite switch to Hindi + SMS"],["Elderly farmer confused by AI","Always introduces itself as an app helper, offers a human officer"],["Call content not saved","Transcript + actions saved to History"]];
+document.getElementById('flips').innerHTML=F.map(function(f){return '<button class="flip" type="button" aria-label="Failure: '+esc(f[0])+'. Safeguard: '+esc(f[1])+'"><div class="inner"><div class="face front"><span class="miss">Missed call</span><p>'+esc(f[0])+'</p><span class="hint">'+no()+'tap to flip</span></div><div class="face back"><span class="miss">Safeguard</span><p>'+esc(f[1])+'</p></div></div></button>'}).join('');
+var fl=document.querySelectorAll('.flip');fl.forEach(function(b){b.onclick=function(){b.classList.toggle('on')}});
+var all=false;document.getElementById('flipall').onclick=function(){all=!all;fl.forEach(function(b){b.classList.toggle('on',all)});this.textContent=all?'Show failures':'Flip all 20'};
+// 4 demo — numbered in source order
+var D=["Hero demo: judge scans a leaf, closes the app, 30 s later the judge's own phone rings. The tomato is calling","Incoming-call screen inside the app (full-screen, crop avatar, Accept/Decline): looks like a real phone call","Build path A (no telephony): in-app \"incoming call\" UI + existing PlantVoice loop (Sarvam STT → Bedrock/Sarvam → TTS)","Build path B (real phone): Twilio/Exotel outbound call + streaming audio websocket to Sarvam; Exotel better for India","Build path C (voice note): WhatsApp-style voice message from the plant via Twilio WhatsApp API, cheap and async","Trigger engine: rules over scan history + weather (rain, humidity, days since scan) decide who to call and why","\"Call me now\" button on the report so the judge triggers it on demand","Scheduled demo call: \"Remind me in 1 minute\" for the booth","Call log screen: past calls with transcript, duration, actions. Makes it feel like a real product","Captions + animated face during the call, so the projector audience follows Telugu speech","Dashboard for an officer: which farmers got outbreak calls in a district (map). The scale story for judges","Show cost math on a slide: ~₹0.6 per 1-min call vs ₹500 field visit","Use the existing Voice Doctor result as the call's opening context: instant continuity","Use the browser Notification API so the call rings even when the tab is in the background","Vibration pattern + ringtone on Android Chrome for a realistic ring","Fallback text call: if mic is denied, a chat-style call with the same voice output","Phase 1 at hackathon: in-app call; Phase 2 after: Exotel number; Phase 3: IVR inbound \"1800\" line","Record a 20 s video of a real phone ringing for the pitch deck in case Wi-Fi fails","Judge-friendly metric shown live: \"answered in 1.4 s\" latency badge during the call","Ending: plant says goodbye and the report updates with \"Follow-up call done\" and a check icon (no emoji in UI)","Accessibility angle: calls reach farmers without smartphones (feature phones), a huge inclusion story","Partner angle: KVKs / Rythu Bharosa Kendras use it to reach thousands of farmers by voice","Privacy slide: opt-in, quiet hours, delete-my-data by voice","Make the call bilingual: plant asks preferred language at first call and remembers it","Measure: did the farmer act? A follow-up photo after the call closes the loop. Judges love outcomes"];
+var DH=D.map(function(t){return no()+esc(t)});
+var actIdx=[0,6,7,1,12,9,18,19,24],routeIdx=[2,3,4];
+document.getElementById('acts').innerHTML=actIdx.map(function(i,k){return '<div class="act"><div class="kick" style="color:var(--tur)">Beat '+(k+1)+'</div>'+DH[i]+'</div>'}).join('');
+document.getElementById('routes').innerHTML=routeIdx.map(function(i,k){return '<div class="route '+'abc'[k]+'" style="color:var(--ink)"><b class="serif" style="font-size:20px">Route '+'ABC'[k]+'</b><br>'+DH[i]+'</div>'}).join('');
+document.getElementById('path').innerHTML='<div class="ph now"><div class="kick" style="color:var(--tur)">Phase 1 · hackathon</div><h4>In-app call</h4>Ring screen, PlantVoice loop, call log, trigger engine</div><div class="ph"><div class="kick">Phase 2 · after</div><h4>Exotel number</h4>Real PSTN outbound calls, feature-phone reach</div><div class="ph"><div class="kick">Phase 3</div><h4>IVR "1800" line</h4>Inbound: farmer dials the plant</div><p style="grid-column:1/-1;margin:10px 0 0">'+DH[16]+'</p>';
+var used=actIdx.concat(routeIdx,[16]);
+document.getElementById('props').innerHTML=DH.filter(function(_,i){return used.indexOf(i)<0}).map(function(h){return '<li>'+h+'</li>'}).join('');
+// 5 trust
+var T=[["0 s","Plant greets by his name and village: \"Ramaiah garu, this is your tomato from the east field\""],["0 s","Shared-phone households: plant asks \"Am I speaking with Ramaiah garu?\" before personal info"],["before","First call is a 20-second \"hello\" test call right after opt-in, so the voice is familiar before any bad news"],["10 s","Proof moment: plant quotes the exact photo date and spot count from his last scan"],["30 s","Plant admits uncertainty on calls (\"I'm about 70% sure\"): honesty builds trust"],["45 s","Officer co-sign: serious advice ends with \"Officer Sunitha at the RBK agrees\" when an officer reviewed it"],["any call","Good-news calls too, not only problems: \"I flowered today\""],["choice","Voice of a local young woman agri-graduate persona as an alternative to the plant, for farmers who find talking plants silly"],["end","Call ends by asking one question to keep him engaged: \"Will you send me a photo on Friday?\""],["after","Farmer can rate the call by saying \"helpful\" or \"not helpful\": a feedback loop"]];
+var order=[0,2,4,5,6,9,7,3,8,1];// source order numbering
+var TH=[];order.forEach(function(o){TH[o]=no()+esc(T[o][1])});
+document.getElementById('trustl').innerHTML=T.map(function(t,i){return '<div class="tr"><div class="lab">'+t[0]+'</div><div><div class="bar"><i style="width:'+(10+i*9)+'%"></i></div>'+TH[i]+'</div></div>'}).join('');
+// timer
+var st=null,tm=document.getElementById('timer');new IntersectionObserver(function(e){if(e[0].isIntersecting&&!st){st=Date.now();setInterval(function(){var s=Math.floor((Date.now()-st)/1000);tm.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},1000)}}).observe(tm);
+</script>
+</body>
+</html>

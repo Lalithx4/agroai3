@@ -88,18 +88,24 @@ export class PlantVoice {
         this.stopListening?.(true);
     }
 
-    /** Speak text in the plant's voice. Resolves when finished. */
+    /**
+     * Speak text in the plant's voice. Resolves true when it played, false when the browser
+     * blocked audio because nobody has tapped yet (the caller then shows a "Hear me" button).
+     */
     async speak(text, { language = 'en', level = 1 } = {}) {
         this.stop();
+        let res;
         try {
-            const res = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, language, level }) });
-            if (!res.ok) throw new Error('tts ' + res.status);
+            res = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, language, level }) });
+        } catch { res = null; }
+        if (res && res.ok) {
             const url = URL.createObjectURL(await res.blob());
-            await this.#play(url);
+            const played = await this.#play(url);
             URL.revokeObjectURL(url);
-        } catch {
-            await this.#speakBrowser(text, language);
+            return played;
         }
+        await this.#speakBrowser(text, language);
+        return true;
     }
 
     #play(url) {
@@ -128,10 +134,10 @@ export class PlantVoice {
                 }
                 this.raf = requestAnimationFrame(tick);
             };
-            const end = () => { cancelAnimationFrame(this.raf); this.onMouth(0); this.audio = null; resolve(); };
-            audio.onended = end;
-            audio.onerror = end;
-            audio.play().then(() => { this.raf = requestAnimationFrame(tick); }).catch(end);
+            const end = (ok = true) => { cancelAnimationFrame(this.raf); this.onMouth(0); this.audio = null; resolve(ok); };
+            audio.onended = () => end(true);
+            audio.onerror = () => end(true);
+            audio.play().then(() => { this.raf = requestAnimationFrame(tick); }).catch(() => end(false));
         });
     }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { AlertTriangle, Lightbulb, BookOpen, Droplets, Sun, FileText, Mic, Square, Loader2 } from 'lucide-react';
+import { AlertTriangle, Lightbulb, BookOpen, Droplets, Sun, FileText, Mic, Square, Loader2, PhoneOff, Volume2 } from 'lucide-react';
 import { PlantVoice } from './plant-voice';
 import './ar-overlay.css';
 
@@ -21,7 +21,7 @@ const COPY = {
     en: {
         searching: 'Looking for a plant', reading: 'Reading the leaf', live: 'Live', sure: (n) => `${n}% sure`,
         health: 'Health', tip: 'Do today', fact: 'Good to know', report: 'Full report',
-        talk: 'Talk to me', end: 'End', you: 'You', listening: 'Listening… just talk', thinking: 'Thinking…', speaking: 'Speaking…',
+        talk: 'Talk to me', hearMe: 'Tap to hear me', end: 'End', you: 'You', listening: 'Listening… just talk', thinking: 'Thinking…', speaking: 'Speaking…',
         noMic: 'The microphone is not available here.', notHeard: 'I did not catch that. Tap to try again.',
         water: { low: 'Little water', medium: 'Moderate water', high: 'Lots of water' },
         sun: { 'full sun': 'Full sun', 'part shade': 'Part shade', shade: 'Shade' },
@@ -30,7 +30,7 @@ const COPY = {
     hi: {
         searching: 'पौधा ढूँढ रहा हूँ', reading: 'पत्ता पढ़ रहा हूँ', live: 'लाइव', sure: (n) => `${n}% पक्का`,
         health: 'सेहत', tip: 'आज करें', fact: 'काम की बात', report: 'पूरी रिपोर्ट',
-        talk: 'मुझसे बात करो', end: 'बंद करो', you: 'आप', listening: 'सुन रहा हूँ… बोलिए', thinking: 'सोच रहा हूँ…', speaking: 'बोल रहा हूँ…',
+        talk: 'मुझसे बात करो', hearMe: 'सुनने के लिए टैप करें', end: 'बंद करो', you: 'आप', listening: 'सुन रहा हूँ… बोलिए', thinking: 'सोच रहा हूँ…', speaking: 'बोल रहा हूँ…',
         noMic: 'यहाँ माइक्रोफ़ोन नहीं चल रहा।', notHeard: 'सुनाई नहीं दिया। फिर से टैप करें।',
         water: { low: 'कम पानी', medium: 'मध्यम पानी', high: 'ज़्यादा पानी' },
         sun: { 'full sun': 'पूरी धूप', 'part shade': 'आधी छाया', shade: 'छाया' },
@@ -39,7 +39,7 @@ const COPY = {
     te: {
         searching: 'మొక్క కోసం చూస్తున్నాను', reading: 'ఆకును చదువుతున్నాను', live: 'లైవ్', sure: (n) => `${n}% ఖచ్చితం`,
         health: 'ఆరోగ్యం', tip: 'ఈ రోజు చేయండి', fact: 'తెలుసుకోండి', report: 'పూర్తి రిపోర్ట్',
-        talk: 'నాతో మాట్లాడండి', end: 'ఆపండి', you: 'మీరు', listening: 'వింటున్నాను… మాట్లాడండి', thinking: 'ఆలోచిస్తున్నాను…', speaking: 'మాట్లాడుతున్నాను…',
+        talk: 'నాతో మాట్లాడండి', hearMe: 'వినడానికి తాకండి', end: 'ఆపండి', you: 'మీరు', listening: 'వింటున్నాను… మాట్లాడండి', thinking: 'ఆలోచిస్తున్నాను…', speaking: 'మాట్లాడుతున్నాను…',
         noMic: 'ఇక్కడ మైక్ అందుబాటులో లేదు.', notHeard: 'సరిగ్గా వినపడలేదు. మళ్ళీ తాకండి.',
         water: { low: 'తక్కువ నీరు', medium: 'మధ్యస్థ నీరు', high: 'ఎక్కువ నీరు' },
         sun: { 'full sun': 'పూర్తి ఎండ', 'part shade': 'పాక్షిక నీడ', shade: 'నీడ' },
@@ -102,7 +102,7 @@ const DOTS = Array.from({ length: GRID * GRID }, (_, i) => {
     return { x: cx * 100, y: cy * 100, d: Math.hypot(cx - 0.5, cy - 0.5) };
 });
 
-export default function ArOverlay({ videoRef, language = 'en', onFullReport }) {
+export default function ArOverlay({ videoRef, language = 'en', onFullReport, call = null }) {
     const c = COPY[language] || COPY.en;
     const [data, setData] = useState(null);
     const [hint, setHint] = useState('');
@@ -114,6 +114,9 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport }) {
     const [talk, setTalk] = useState('idle'); // idle | listening | thinking | speaking
     const [turns, setTurns] = useState([]);   // {who: 'you'|'plant', text}
     const [talkNote, setTalkNote] = useState('');
+    const [needsTap, setNeedsTap] = useState(null);   // text the browser would not let us play yet
+    const [onCall, setOnCall] = useState(!!call);
+    const [callSecs, setCallSecs] = useState(0);
 
     const missesRef = useRef(0);
     const lockedRef = useRef(false);
@@ -218,15 +221,17 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport }) {
     const say = useCallback(async (text, lang) => {
         const v = voiceRef.current;
         const d = dataRef.current;
-        if (!v || !text) return;
+        if (!v || !text) return true;
         setTalk('speaking');
-        await v.speak(text, { language: lang || language, level: LEVEL[d?.health_status] ?? 1 });
+        const played = await v.speak(text, { language: lang || language, level: LEVEL[d?.health_status ?? call?.healthStatus] ?? 1 });
         setTalk('idle');
-    }, [language]);
+        if (!played) setNeedsTap({ text, lang });
+        return played;
+    }, [language, call]);
 
     // The plant greets the farmer once each time it locks onto a plant.
     useEffect(() => {
-        if (!data?.say || greetedFor.current === lockCount || convoOn.current) return;
+        if (call || !data?.say || greetedFor.current === lockCount || convoOn.current) return;
         greetedFor.current = lockCount;
         setTurns([{ who: 'plant', text: data.say }]);
         say(data.say);
@@ -265,9 +270,9 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport }) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         message: heard,
-                        plant_type: d?.plant_name || 'plant',
-                        health_status: d?.health_status || 'unknown',
-                        diseases: d?.issue ? [d.issue] : [],
+                        plant_type: d?.plant_name || call?.plant || 'plant',
+                        health_status: d?.health_status || call?.healthStatus || 'unknown',
+                        diseases: d?.issue ? [d.issue] : call?.issue ? [call.issue] : [],
                         conversation_history: history,
                         language: lang,
                         voice: true,
@@ -284,7 +289,29 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport }) {
         }
         convoOn.current = false;
         setTalk('idle');
-    }, [c, language, say]);
+    }, [c, language, say, call]);
+
+    // Answered call: the plant speaks first, then the conversation runs hands-free.
+    useEffect(() => {
+        if (!call) return undefined;
+        let cancelled = false;
+        const start = setTimeout(async () => {
+            if (cancelled) return;
+            setTurns([{ who: 'plant', text: call.say }]);
+            const played = await say(call.say, call.language);
+            if (!cancelled && played) conversation();
+        }, 1200);
+        const tick = setInterval(() => setCallSecs((n) => n + 1), 1000);
+        return () => { cancelled = true; clearTimeout(start); clearInterval(tick); };
+    }, [call, say, conversation]);
+
+    const hearNow = async () => {
+        const pending = needsTap;
+        setNeedsTap(null);
+        voiceRef.current?.unlock();
+        const played = await say(pending.text, pending.lang);
+        if (played && onCall && !convoOn.current) conversation();
+    };
 
     const startTalk = () => {
         voiceRef.current?.unlock();
@@ -294,6 +321,7 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport }) {
     };
 
     const endTalk = () => {
+        setOnCall(false);
         convoOn.current = false;
         voiceRef.current?.endTurn();
         voiceRef.current?.stop();
@@ -353,6 +381,23 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport }) {
                 <span className="arx-status-dot" />
                 {statusText}
             </div>
+
+            {onCall && (
+                <div className="arx-call" role="status">
+                    <span className="arx-call-dot" />
+                    <span className="arx-call-name">{data?.plant_name || call?.plant}</span>
+                    <span className="arx-call-time nb-numeral">{String(Math.floor(callSecs / 60)).padStart(2, '0')}:{String(callSecs % 60).padStart(2, '0')}</span>
+                    <button type="button" className="arx-call-end" onClick={endTalk} aria-label={c.end}><PhoneOff size={18} /></button>
+                </div>
+            )}
+
+            {needsTap && (
+                <button type="button" className="arx-hear" onClick={hearNow}><Volume2 size={18} aria-hidden="true" /> {c.hearMe}</button>
+            )}
+
+            {onCall && !locked && turns.length > 0 && (
+                <p className="arx-caption" aria-live="polite">{turns[turns.length - 1].text}</p>
+            )}
 
             {locked && (
                 <section key={plantKey} className={`arx-card ${talking ? 'is-talking' : ''}`} aria-label={data.plant_name}>

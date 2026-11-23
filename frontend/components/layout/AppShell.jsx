@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Header from './Header';
 import BottomNav from './BottomNav';
 import { NO_HEADER_ROUTES, NO_BOTTOM_NAV_ROUTES } from './nav-items';
+import IncomingCall from '@/components/call/IncomingCall';
 
 export default function AppShell({ children }) {
     const pathname = usePathname() || '/';
@@ -21,6 +22,7 @@ export default function AppShell({ children }) {
                 {children}
             </main>
             {showBottomNav && <BottomNav />}
+            <IncomingCall />
         </>
     );
 }

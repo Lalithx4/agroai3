@@ -1,0 +1,134 @@
+/* Full-screen incoming call from the plant */
+.icall {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: calc(48px + env(safe-area-inset-top)) 24px calc(40px + env(safe-area-inset-bottom));
+    background: #161A15;
+    color: #ECE7DA;
+    text-align: center;
+    animation: icall-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes icall-in {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: none; }
+}
+
+.icall-top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.icall-over {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #B3AE9F;
+}
+
+.icall-avatar {
+    position: relative;
+    width: 128px;
+    height: 128px;
+    margin: 28px 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #2F5D3A;
+    color: #FFFDF8;
+}
+
+.icall-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid #8CC497;
+    animation: icall-pulse 1.8s ease-out infinite;
+}
+
+.icall-ring.two { animation-delay: 0.9s; }
+
+@keyframes icall-pulse {
+    from { opacity: 0.8; transform: scale(1); }
+    to { opacity: 0; transform: scale(1.7); }
+}
+
+.icall-name {
+    font-family: var(--font-display, Georgia, serif);
+    font-size: 2.4rem;
+    font-weight: 600;
+    color: #FFFDF8;
+}
+
+.icall-status {
+    font-size: 1rem;
+    color: #B3AE9F;
+    animation: icall-blink 1.4s ease-in-out infinite;
+}
+
+@keyframes icall-blink { 50% { opacity: 0.5; } }
+
+.icall-issue {
+    margin-top: 6px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: #382A15;
+    color: #E8A33A;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.icall-hint {
+    max-width: 28ch;
+    color: #B3AE9F;
+    font-size: 0.92rem;
+}
+
+.icall-actions {
+    display: flex;
+    gap: 72px;
+}
+
+.icall-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    border: 0;
+    background: none;
+    color: #ECE7DA;
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.icall-btn span {
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #FFFDF8;
+    transition: transform 0.12s;
+}
+
+.icall-btn:active span { transform: scale(0.94); }
+.icall-btn.decline span { background: #B5452A; }
+.icall-btn.accept span { background: #2F7A45; animation: icall-wiggle 1.2s ease-in-out infinite; }
+
+@keyframes icall-wiggle {
+    0%, 70%, 100% { transform: rotate(0); }
+    75% { transform: rotate(-12deg); }
+    85% { transform: rotate(12deg); }
+    95% { transform: rotate(-6deg); }
+}

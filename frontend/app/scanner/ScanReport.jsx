@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import {
     CheckCircle2, AlertTriangle, HelpCircle, CircleAlert, Sprout, ChevronDown, Check,
-    HelpCircle as WhyIcon, Activity, Leaf, FlaskConical, Droplets, Sun, Thermometer, Lightbulb, Mic, RotateCcw, ShieldCheck,
+    HelpCircle as WhyIcon, PhoneIncoming, Activity, Leaf, FlaskConical, Droplets, Sun, Thermometer, Lightbulb, Mic, RotateCcw, ShieldCheck,
 } from 'lucide-react';
+import { scheduleCall } from '@/lib/plant-call';
 import './report.css';
 
 /**
@@ -33,7 +34,7 @@ const COPY = {
         watering: 'Watering', frequency: 'How often', bestTime: 'Best time',
         conditions: 'Growing conditions', temp: 'Temperature', humidity: 'Humidity', sunlight: 'Sunlight', ph: 'Soil pH',
         tips: 'Good habits', officer: 'This is a second opinion. Check doses with your agriculture officer or agri shop before spraying.',
-        saved: 'Saved to your history', again: 'Scan again', talk: 'Talk to this plant',
+        saved: 'Saved to your history', again: 'Scan again', talk: 'Talk to this plant', callMe: 'Call me in 30 s', callSet: 'Your plant will call you in 30 seconds. Keep the app open.',
     },
     hi: {
         unsure: 'अभी पक्का नहीं', healthy: 'स्वस्थ लग रहा है', serious: 'गंभीर समस्या', care: 'देखभाल चाहिए',
@@ -51,7 +52,7 @@ const COPY = {
         watering: 'सिंचाई', frequency: 'कितनी बार', bestTime: 'सबसे अच्छा समय',
         conditions: 'उगाने की स्थिति', temp: 'तापमान', humidity: 'नमी', sunlight: 'धूप', ph: 'मिट्टी pH',
         tips: 'अच्छी आदतें', officer: 'यह दूसरी राय है। छिड़काव से पहले दवा की मात्रा कृषि अधिकारी या दुकान से पूछें।',
-        saved: 'आपके इतिहास में सहेजा गया', again: 'फिर से स्कैन करें', talk: 'इस पौधे से बात करें',
+        saved: 'आपके इतिहास में सहेजा गया', again: 'फिर से स्कैन करें', talk: 'इस पौधे से बात करें', callMe: '30 सेकंड में कॉल करो', callSet: 'आपका पौधा 30 सेकंड में आपको कॉल करेगा। ऐप खुला रखें।',
     },
     te: {
         unsure: 'ఇంకా ఖచ్చితంగా తెలియదు', healthy: 'ఆరోగ్యంగా ఉంది', serious: 'తీవ్రమైన సమస్య', care: 'జాగ్రత్త అవసరం',
@@ -69,7 +70,7 @@ const COPY = {
         watering: 'నీటి పారుదల', frequency: 'ఎన్ని సార్లు', bestTime: 'మంచి సమయం',
         conditions: 'పెరిగే పరిస్థితులు', temp: 'ఉష్ణోగ్రత', humidity: 'తేమ', sunlight: 'ఎండ', ph: 'నేల pH',
         tips: 'మంచి అలవాట్లు', officer: 'ఇది రెండో అభిప్రాయం మాత్రమే. పిచికారీ ముందు మోతాదును వ్యవసాయ అధికారి లేదా షాపులో అడగండి.',
-        saved: 'మీ చరిత్రలో సేవ్ అయింది', again: 'మళ్ళీ స్కాన్ చేయండి', talk: 'ఈ మొక్కతో మాట్లాడండి',
+        saved: 'మీ చరిత్రలో సేవ్ అయింది', again: 'మళ్ళీ స్కాన్ చేయండి', talk: 'ఈ మొక్కతో మాట్లాడండి', callMe: '30 సెకన్లలో కాల్ చేయి', callSet: 'మీ మొక్క 30 సెకన్లలో మీకు కాల్ చేస్తుంది. యాప్ తెరిచే ఉంచండి.',
     },
 };
 
@@ -122,6 +123,14 @@ function Section({ icon: Icon, title, open, children }) {
 export default function ScanReport({ result: r, image, language = 'en', onScanAgain, onTalk }) {
     const c = COPY[language] || COPY.en;
     const [done, setDone] = useState(() => new Set());
+    const [callSet, setCallSet] = useState(false);
+
+    // "Your plant calls you back": ring in 30 s, answered in the live camera.
+    const callMe = () => {
+        scheduleCall({ plant: r.plant_type || r.plant_name, issue: r.diagnosis?.primary_issue || r.diseases?.[0]?.name, healthStatus: r.health_status, language }, 30000);
+        if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {});
+        setCallSet(true);
+    };
     const [wide] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches);
     const v = verdictOf(r, c);
     const conf = r.confidence != null ? Math.round(r.confidence) : null;
@@ -299,9 +308,10 @@ export default function ScanReport({ result: r, image, language = 'en', onScanAg
             <p className="rep-officer"><ShieldCheck size={16} aria-hidden="true" /> {c.officer}</p>
 
             <footer className="rep-actions">
-                <span className="rep-saved"><Check size={14} aria-hidden="true" /> {c.saved}</span>
+                <span className="rep-saved"><Check size={14} aria-hidden="true" /> {callSet ? c.callSet : c.saved}</span>
                 <div>
                     <button type="button" className="nb-btn nb-btn-secondary" onClick={onScanAgain}><RotateCcw size={16} aria-hidden="true" /> {c.again}</button>
+                    <button type="button" className="nb-btn nb-btn-secondary" onClick={callMe} disabled={callSet}><PhoneIncoming size={16} aria-hidden="true" /> {c.callMe}</button>
                     {onTalk && <button type="button" className="nb-btn nb-btn-primary" onClick={onTalk}><Mic size={16} aria-hidden="true" /> {c.talk}</button>}
                 </div>
             </footer>

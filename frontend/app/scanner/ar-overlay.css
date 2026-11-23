@@ -691,3 +691,93 @@
     0%, 100% { transform: scaleY(0.3); }
     50% { transform: scaleY(1); }
 }
+
+/* ---------- On a call ---------- */
+.arx-call {
+    pointer-events: auto;
+    position: absolute;
+    top: calc(76px + env(safe-area-inset-top, 0px));
+    left: 0;
+    right: 0;
+    width: fit-content;
+    margin: 0 auto;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 6px 6px 14px;
+    border-radius: 999px;
+    background: #2F7A45;
+    color: #FFFDF8;
+    font-weight: 600;
+    white-space: nowrap;
+    animation: arx-drop 0.4s var(--arx-ease) both;
+}
+
+.arx.is-locked .arx-call ~ .arx-status,
+.arx-call ~ .arx-status { display: none; }
+
+.arx-call-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #FFFDF8;
+    animation: arx-blink 1s ease-in-out infinite;
+}
+
+.arx-call-time { opacity: 0.85; font-size: 0.95rem; }
+
+.arx-call-end {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: #B5452A;
+    color: #FFFDF8;
+    cursor: pointer;
+}
+
+.arx-hear {
+    pointer-events: auto;
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 12px 20px;
+    border: 0;
+    border-radius: 999px;
+    background: #8CC497;
+    color: #12150F;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    animation: arx-drop 0.35s var(--arx-ease) both;
+}
+
+.arx-caption {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: calc(130px + env(safe-area-inset-bottom, 0px));
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(18, 21, 15, 0.86);
+    border-left: 3px solid #8CC497;
+    color: #FFFDF8;
+    font-size: 1rem;
+    line-height: 1.45;
+    text-align: left;
+    animation: arx-row-in 0.35s var(--arx-ease) both;
+}
+
+@media (min-width: 900px) {
+    .arx-caption { left: auto; right: 24px; width: 360px; bottom: 50%; }
+}

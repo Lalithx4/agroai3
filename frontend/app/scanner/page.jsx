@@ -10,6 +10,7 @@ import { saveScanHistory } from '@/lib/supabase';
 import './scanner.css';
 import ArOverlay from './ArOverlay';
 import ScanReport from './ScanReport';
+import { getAnsweredCall, clearCall } from '@/lib/plant-call';
 import {
     ArrowLeft,
     FolderOpen,
@@ -57,7 +58,10 @@ export default function ScannerPage() {
     const [isCapturing, setIsCapturing] = useState(false);
     
     // AR mode: the live overlay runs its own scan loop (ArOverlay.jsx)
-    const [isARMode, setIsARMode] = useState(false);
+    // An answered plant call (lib/plant-call.js) opens straight into the live camera, already talking.
+    const [call] = useState(() => (typeof window !== 'undefined' ? getAnsweredCall() : null));
+    const [isARMode, setIsARMode] = useState(() => !!call);
+    useEffect(() => { if (call) clearCall(); }, [call]);
 
     useEffect(() => {
         startCamera();
@@ -208,7 +212,8 @@ export default function ScannerPage() {
             {isARMode && !cameraError && (
                 <ArOverlay
                     videoRef={videoRef}
-                    language={language}
+                    language={call?.language || language}
+                    call={call}
                     onFullReport={() => { setIsARMode(false); captureImage(); }}
                 />
             )}
