@@ -424,3 +424,270 @@
         animation-name: arx-card-in-side;
     }
 }
+
+/* ---------- Scan map over the plant ---------- */
+.arx-map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.arx-map-outline {
+    fill: none;
+    stroke: var(--arx-tone);
+    stroke-width: 0.6;
+    vector-effect: non-scaling-stroke;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    opacity: 0.85;
+    animation: arx-trace 1.2s var(--arx-ease) 0.15s forwards;
+}
+
+@keyframes arx-trace {
+    to { stroke-dashoffset: 0; }
+}
+
+.arx-map-dot {
+    fill: var(--arx-tone);
+    opacity: 0;
+    animation: arx-dot 3.2s ease-in-out infinite;
+}
+
+@keyframes arx-dot {
+    0% { opacity: 0; }
+    12% { opacity: 0.75; }
+    40% { opacity: 0.18; }
+    100% { opacity: 0.18; }
+}
+
+/* Problem spots */
+.arx-pin {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    border-radius: 50%;
+    background: var(--arx-tone);
+    border: 2px solid #12150F;
+    opacity: 0;
+    animation: arx-pin-in 0.4s var(--arx-ease) forwards;
+}
+
+.arx-pin::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px solid var(--arx-tone);
+    animation: arx-pin-pulse 1.6s ease-out infinite;
+}
+
+@keyframes arx-pin-in {
+    from { opacity: 0; transform: scale(0.3); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes arx-pin-pulse {
+    from { opacity: 0.8; transform: scale(0.6); }
+    to { opacity: 0; transform: scale(1.6); }
+}
+
+/* ---------- The plant's face ---------- */
+.arx-face {
+    --mouth: 0;
+    --face: 1;
+    position: absolute;
+    left: 50%;
+    top: 34%;
+    width: 92px;
+    height: 70px;
+    margin-left: -46px;
+    transform: scale(var(--face));
+    transform-origin: center top;
+    animation: arx-face-in 0.55s var(--arx-ease) 0.35s both;
+}
+
+@keyframes arx-face-in {
+    from { opacity: 0; transform: translateY(8px) scale(calc(var(--face) * 0.85)); }
+    to { opacity: 1; transform: scale(var(--face)); }
+}
+
+.arx-eye {
+    position: absolute;
+    top: 6px;
+    width: 18px;
+    height: 22px;
+    border-radius: 50%;
+    background: #FFFDF8;
+    border: 2px solid #12150F;
+    box-shadow: inset -4px -2px 0 0 #12150F;
+    transform-origin: center;
+    animation: arx-blink-eye 4.2s infinite;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.arx-eye:first-child { left: 18px; }
+.arx-eye:nth-child(2) { right: 18px; }
+
+@keyframes arx-blink-eye {
+    0%, 92%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(0.1); }
+}
+
+/* Thinking: eyes look up; listening: eyes wide open */
+.arx-face.is-thinking .arx-eye { box-shadow: inset -3px 6px 0 0 #12150F; }
+.arx-face.is-listening .arx-eye { transform: scale(1.12); animation: none; }
+
+.arx-mouth {
+    position: absolute;
+    left: 50%;
+    top: 40px;
+    width: 30px;
+    height: calc(6px + var(--mouth) * 18px);
+    margin-left: -15px;
+    border-radius: 6px 6px 16px 16px;
+    background: #3A1A14;
+    border: 2px solid #FFFDF8;
+    outline: 2px solid #12150F;
+    transition: height 0.06s linear;
+}
+
+/* A gentle frown when the plant is unwell and quiet */
+.tone-warn .arx-face.is-idle .arx-mouth,
+.tone-bad .arx-face.is-idle .arx-mouth {
+    height: 6px;
+    border-radius: 16px 16px 6px 6px;
+}
+
+.arx-ears {
+    position: absolute;
+    inset: -18px;
+    border-radius: 50%;
+    border: 2px solid var(--arx-tone);
+    animation: arx-pin-pulse 1.2s ease-out infinite;
+}
+
+/* ---------- Conversation ---------- */
+.arx-convo {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.arx-bubble {
+    max-width: 92%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    animation: arx-row-in 0.35s var(--arx-ease) both;
+}
+
+.arx-bubble.plant {
+    justify-self: start;
+    background: rgba(255, 253, 248, 0.08);
+    border-left: 3px solid var(--arx-tone);
+    color: #FFFDF8;
+}
+
+.arx-bubble.you {
+    justify-self: end;
+    background: #8CC497;
+    color: #12150F;
+}
+
+.arx-bubble-who {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+.arx-note {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: #E7B53C;
+}
+
+.arx-card .arx-chips {
+    margin-top: 10px;
+}
+
+.arx-talk,
+.arx-end {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.12s;
+}
+
+.arx-talk {
+    flex: 1;
+    justify-content: center;
+    border: 0;
+    background: #8CC497;
+    color: #12150F;
+}
+
+.arx-talk.is-listening {
+    background: #E58468;
+}
+
+.arx-talk.is-thinking,
+.arx-talk.is-speaking {
+    background: rgba(255, 253, 248, 0.14);
+    color: #FFFDF8;
+}
+
+.arx-end {
+    border: 1px solid rgba(255, 253, 248, 0.24);
+    background: transparent;
+    color: #FFFDF8;
+}
+
+.arx-report {
+    background: transparent;
+    color: #FFFDF8;
+    border: 1px solid rgba(255, 253, 248, 0.24);
+}
+
+.arx-report:hover {
+    background: rgba(255, 253, 248, 0.08);
+}
+
+/* Live level bars while listening */
+.arx-wave {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 16px;
+}
+
+.arx-wave i {
+    width: 3px;
+    height: 100%;
+    border-radius: 2px;
+    background: currentColor;
+    animation: arx-wave 0.9s ease-in-out infinite;
+}
+
+.arx-wave i:nth-child(2) { animation-delay: 0.15s; }
+.arx-wave i:nth-child(3) { animation-delay: 0.3s; }
+.arx-wave i:nth-child(4) { animation-delay: 0.45s; }
+
+@keyframes arx-wave {
+    0%, 100% { transform: scaleY(0.3); }
+    50% { transform: scaleY(1); }
+}

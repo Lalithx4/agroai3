@@ -112,6 +112,29 @@ export async function askVisionParts({ model = MODEL_ID, parts, maxTokens = 700 
     return { json: parseJson(text), usage: response.usage || {} };
 }
 
+/**
+ * Multi-turn conversation (system + alternating user/assistant turns) on the fast model.
+ * @param {{role: 'system'|'user'|'assistant', content: string}[]} messages
+ */
+export async function converse(messages, { maxTokens = 300, temperature = 0.7 } = {}) {
+    const system = messages.filter((m) => m.role === 'system').map((m) => ({ text: m.content }));
+    // Bedrock needs strictly alternating turns starting with the user: merge neighbours, drop a leading assistant turn.
+    const turns = [];
+    for (const m of messages.filter((x) => x.role !== 'system' && x.content)) {
+        const last = turns[turns.length - 1];
+        if (last && last.role === m.role) last.content[0].text += `\n${m.content}`;
+        else turns.push({ role: m.role, content: [{ text: m.content }] });
+    }
+    while (turns.length && turns[0].role !== 'user') turns.shift();
+    const response = await client.send(new ConverseCommand({
+        modelId: MODEL_ID,
+        system,
+        messages: turns,
+        inferenceConfig: { maxTokens, temperature },
+    }));
+    return (response.output?.message?.content || []).map((c) => c.text || '').join('').trim();
+}
+
 /** Text-only call, used for the fallback chat helper. */
 export async function askText(prompt, maxTokens = 512) {
     const response = await client.send(new ConverseCommand({
@@ -565,12 +588,14 @@ Reply ONLY with this JSON:
   "sun": "full sun" | "part shade" | "shade",
   "confidence": 0-1,
   "box": {"x": 0-1, "y": 0-1, "w": 0-1, "h": 0-1} = the main plant or leaf in the frame, measured from the top-left corner as fractions of width and height,
+  "spots": up to 3 visible problem areas as [{"x": 0-1, "y": 0-1}] in the same frame coordinates, or [] if healthy,
+  "say": "what the plant would say first, out loud, in first person to its farmer: 1 or 2 short, warm spoken sentences about how it feels and what is wrong (or that it is fine)",
   "hint": if identified is false, a short instruction to get a better view (e.g. "Move closer to one leaf"), else null
 }
 Be honest: if the frame is blurry, dark or not a plant, set identified to false. Do not exaggerate problems on healthy plants. No emoji, no exclamation marks.`;
 
     try {
-        const r = await askVision(prompt, imageBase64, 500);
+        const r = await askVision(prompt, imageBase64, 700);
         const box = r.box && typeof r.box === 'object'
             ? { x: clamp01(r.box.x), y: clamp01(r.box.y), w: clamp01(r.box.w), h: clamp01(r.box.h) }
             : null;
@@ -588,6 +613,8 @@ Be honest: if the frame is blurry, dark or not a plant, set identified to false.
             sun: clean(r.sun) || null,
             confidence: clamp01(r.confidence),
             box: box && box.w > 0.05 && box.h > 0.05 ? box : null,
+            spots: Array.isArray(r.spots) ? r.spots.slice(0, 3).map((p) => ({ x: clamp01(p?.x), y: clamp01(p?.y) })) : [],
+            say: clean(r.say) || null,
             hint: clean(r.hint) || (r.identified ? null : AR_HINT[lang]),
             language: lang,
             timestamp: Date.now(),

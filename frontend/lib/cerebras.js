@@ -1,10 +1,12 @@
 /**
- * Chat brain for "Sage", the talking plant (Cerebras Llama, fast).
+ * Chat brain for "Sage", the talking plant: Claude on Bedrock first, then Sarvam, then Cerebras if configured, then offline lines.
  * Goal: sound like a knowledgeable, warm person-who-happens-to-be-a-plant, not a chatbot.
- * Without CEREBRAS_API_KEY it falls back to short, natural offline replies.
+ * Offline replies keep the chat usable with no keys at all.
  */
 
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
+import { chat as sarvamChat, isSarvamConfigured } from './sarvam.js';
+import { converse as bedrockConverse } from './bedrock.js';
 
 const client = new Cerebras({ apiKey: process.env.CEREBRAS_API_KEY || '' });
 const MODEL = process.env.CEREBRAS_MODEL || 'llama-3.3-70b';
@@ -35,7 +37,7 @@ function personalityFor(plantType) {
     return Object.entries(plantPersonalities).find(([k]) => p.includes(k))?.[1] || plantPersonalities.default;
 }
 
-function systemPrompt({ plantType, healthStatus, diseases, language }) {
+function systemPrompt({ plantType, healthStatus, diseases, language, voice }) {
     const persona = personalityFor(plantType);
     const name = plantType && plantType !== 'Unknown' ? plantType : 'Sage';
     return `You are ${name}, a ${persona.mood} plant who can talk with the farmer who looks after you. ${persona.trait}
@@ -43,7 +45,9 @@ You know practical farming in India: pests, diseases, water, soil, fertiliser, s
 ${healthStatus && healthStatus !== 'unknown' ? `Your health right now: ${healthStatus}.` : ''}${diseases.length ? ` You may have: ${diseases.join(', ')}.` : ''}
 
 How you talk:
-- Like a real conversation with someone you trust. Short: usually 1 to 3 sentences. Use a short list only when the farmer asks for steps.
+${voice
+        ? '- This is a live spoken conversation: the farmer is pointing a phone camera at you and talking. Your words are read aloud, so reply in 1 or 2 short spoken sentences (under 30 words total), no lists, no headings, nothing that only works on a screen.'
+        : '- Like a real conversation with someone you trust. Short: usually 1 to 3 sentences. Use a short list only when the farmer asks for steps.'}
 - Speak as yourself, the plant ("my leaves", "water me"), but don't overdo it. Never say you are an AI or a language model.
 - Answer the actual question first. If you need one key detail (which crop, what the spots look like, how old the plant is), ask one short question at the end.
 - Remember what was said earlier in this conversation and refer back to it naturally.
@@ -53,37 +57,50 @@ How you talk:
 - ${LANGUAGE_RULES[language] || LANGUAGE_RULES.en} If the farmer writes in another of these languages, reply in theirs.`;
 }
 
-export async function chatWithPlant(message, plantType, healthStatus, diseases = [], history = [], language = 'en') {
+/**
+ * Reply as the plant. Tries Claude on Bedrock, then Sarvam (strong in Hindi/Telugu), then Cerebras, then offline lines.
+ * @param {{voice?: boolean}} [opts] voice: reply is spoken aloud, so keep it to 1-2 short sentences
+ */
+export async function chatWithPlant(message, plantType, healthStatus, diseases = [], history = [], language = 'en', opts = {}) {
     const diseasesArray = Array.isArray(diseases) ? diseases : (diseases ? [diseases] : []);
     const lang = LANGUAGE_RULES[language] ? language : 'en';
+    const turns = (Array.isArray(history) ? history : [])
+        .filter((h) => h && (h.role === 'user' || h.role === 'assistant') && typeof h.content === 'string')
+        .slice(-10)
+        .map((h) => ({ role: h.role, content: h.content.slice(0, 1200) }));
+    const messages = [
+        { role: 'system', content: systemPrompt({ plantType, healthStatus, diseases: diseasesArray, language: lang, voice: !!opts.voice }) },
+        ...turns,
+        { role: 'user', content: message },
+    ];
 
-    if (!process.env.CEREBRAS_API_KEY) {
-        return { response: getOfflineResponse(message, lang, history), plant_type: plantType, offline: true };
+    // Claude (Bedrock) for English; Sarvam first for Hindi and Telugu, where its spoken language is more natural.
+    const viaBedrock = async () => cleanReply(await bedrockConverse(messages, { maxTokens: opts.voice ? 160 : 400 }));
+    const viaSarvam = async () => {
+        if (!isSarvamConfigured()) throw new Error('Sarvam not configured');
+        return cleanReply(await sarvamChat(messages, { temperature: 0.6 }));
+    };
+    const order = lang === 'en' ? [['bedrock', viaBedrock], ['sarvam', viaSarvam]] : [['sarvam', viaSarvam], ['bedrock', viaBedrock]];
+    for (const [name, run] of order) {
+        try {
+            const text = await run();
+            if (text) return { response: text, plant_type: plantType, model: name };
+        } catch (error) {
+            console.error(`${name} chat error:`, error.message);
+        }
     }
 
-    try {
-        const turns = (Array.isArray(history) ? history : [])
-            .filter((h) => h && (h.role === 'user' || h.role === 'assistant') && typeof h.content === 'string')
-            .slice(-10)
-            .map((h) => ({ role: h.role, content: h.content.slice(0, 1200) }));
-
-        const response = await client.chat.completions.create({
-            model: MODEL,
-            messages: [
-                { role: 'system', content: systemPrompt({ plantType, healthStatus, diseases: diseasesArray, language: lang }) },
-                ...turns,
-                { role: 'user', content: message },
-            ],
-            max_tokens: 280,
-            temperature: 0.7,
-        });
-
-        const text = cleanReply(response.choices[0]?.message?.content || '');
-        return { response: text || getOfflineResponse(message, lang, history), plant_type: plantType, model: MODEL };
-    } catch (error) {
-        console.error('Cerebras chat error:', error.message);
-        return { response: getOfflineResponse(message, lang, history), plant_type: plantType, error: error.message, offline: true };
+    if (process.env.CEREBRAS_API_KEY) {
+        try {
+            const response = await client.chat.completions.create({ model: MODEL, messages, max_tokens: opts.voice ? 120 : 280, temperature: 0.7 });
+            const text = cleanReply(response.choices[0]?.message?.content || '');
+            if (text) return { response: text, plant_type: plantType, model: MODEL };
+        } catch (error) {
+            console.error('Cerebras chat error:', error.message);
+        }
     }
+
+    return { response: getOfflineResponse(message, lang, history), plant_type: plantType, offline: true };
 }
 
 /** Strip emoji and markdown emphasis that some models add anyway. */

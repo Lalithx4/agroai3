@@ -82,6 +82,27 @@ export async function speak(text, { language = 'en', pace = 1, pitch = 0 } = {})
   return Buffer.from(j.audios[0], 'base64');
 }
 
+const CHAT_MODEL = process.env.SARVAM_CHAT_MODEL || 'sarvam-105b-conversations';
+
+/**
+ * Conversational reply (OpenAI-style messages). Strong in Hindi and Telugu, about 2 s.
+ * @param {{role: 'system'|'user'|'assistant', content: string}[]} messages
+ * @returns {Promise<string>}
+ */
+export async function chat(messages, { maxTokens = 900, temperature = 0.6 } = {}) {
+  const res = await fetch(`${BASE}/v1/chat/completions`, {
+    method: 'POST',
+    headers: { 'api-subscription-key': key(), 'Content-Type': 'application/json' },
+    // Reasoning tokens count against max_tokens, so keep effort low and the budget generous.
+    body: JSON.stringify({ model: CHAT_MODEL, messages, max_tokens: maxTokens, temperature, reasoning_effort: 'low' }),
+  });
+  if (!res.ok) throw new Error(`Sarvam chat failed (${res.status}): ${(await res.text()).slice(0, 200)}`);
+  const j = await res.json();
+  const text = j.choices?.[0]?.message?.content;
+  if (!text) throw new Error('Sarvam chat returned no text');
+  return String(text).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+}
+
 /** Same mood table as the talking-plant demo: health level 0..4 -> Bulbul pace and pitch. */
 export const MOOD = [
   { pace: 1.10, pitch: 0.10 },

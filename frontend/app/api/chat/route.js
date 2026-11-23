@@ -10,7 +10,8 @@ export async function POST(request) {
             health_status = 'healthy',
             diseases = [],
             conversation_history = [],
-            language = 'en' 
+            language = 'en',
+            voice = false,
         } = body;
         
         if (!message) {
@@ -26,7 +27,8 @@ export async function POST(request) {
             health_status, 
             diseases,
             conversation_history,
-            language
+            language,
+            { voice: !!voice }
         );
         
         return NextResponse.json(result);
