@@ -145,18 +145,143 @@ export async function askText(prompt, maxTokens = 512) {
     return (response.output?.message?.content || []).map((c) => c.text || '').join('').trim();
 }
 
-export async function analyzePlantHealth(imageBase64, plantType = null, language = 'en') {
+/**
+ * Naming the plant is its own step, on the stronger model. Doing it inside the long report on Haiku
+ * mixed up look-alikes (money plant came back as other names) and used Western names.
+ */
+export const ID_MODEL = process.env.BEDROCK_ID_MODEL || DIAGNOSIS_MODEL;
+const LOCAL_NAME = {
+    hi: 'the common Hindi name in Devanagari script',
+    te: 'the common Telugu name in Telugu script',
+};
+
+const ID_PROMPT = (language) => `You are a field botanist who knows Indian farms, kitchen gardens and homes. Name the main plant in this photo.
+
+Look first, then name. In "observations", note what you can actually see: leaf shape, base and tip, edge (smooth, toothed, lobed), veins, surface (glossy, matte, hairy), colour and any variegation pattern, how leaves sit on the stem, growth habit (vine, herb, shrub, tree, grass), flowers or fruit, and the setting (pot, field, hanging, wall).
+
+Rules:
+- The farmers are in India. Use the name people use in India, in English. "Money plant" in India means Epipremnum aureum (pothos). Call Crassula ovata "Jade plant" and Pilea peperomioides "Chinese money plant".
+- Separate look-alikes by the feature that tells them apart, for example:
+  - Money plant (Epipremnum aureum): glossy, slightly waxy heart-shaped leaves with yellow or cream streaks or plain green, a groove along the leaf stalk, climbing or trailing.
+  - Satin pothos (Scindapsus pictus): matte, thick, dark green leaves with silvery spots or patches.
+  - Heartleaf philodendron (Philodendron hederaceum): thin, soft, more evenly heart-shaped leaves, no groove on the leaf stalk.
+  - Arrowhead plant (Syngonium podophyllum): arrow-shaped leaves, often with pale veins.
+  - Tulsi (Ocimum tenuiflorum): small, slightly hairy, softly toothed leaves, often purple stems. Sweet basil (Ocimum basilicum): bigger, smooth, glossy leaves.
+  - Curry leaf (Murraya koenigii): small, smooth-edged leaflets on a long stalk. Neem (Azadirachta indica): curved, sharply toothed leaflets.
+  - Tomato: hairy, deeply cut, toothed leaflets. Potato: broader, smoother leaflets. Brinjal: large, soft, wavy-edged leaves, sometimes spiny.
+  - Chilli: narrow, smooth, pointed leaves. Bhindi (okra) and cotton: both palm-shaped lobed leaves; bhindi has pods, cotton has bolls.
+  - Paddy, wheat, maize, jowar and sugarcane: check leaf width, the midrib and the stem.
+  These pairs only show how to tell look-alikes apart. They are NOT likely answers: most photos are none of them, so name only what the features show.
+- Never guess a farm crop just because this is a farming app. Houseplants, weeds, trees and garden plants are common too.
+- confidence is your honest chance (0-100) that plant_name is right. A blurry, far away, dark or partial view must lower it. Above 85 only when the key features are clearly visible.
+- A single detached leaf or a close-up of part of a leaf, with no stem, flowers, fruit or growth habit in view, is hard to name: keep confidence at 65 or below unless the leaf is unmistakable, and give the closest look-alikes as alternatives.
+- If no plant is clearly in view, set identified to false.
+
+Reply ONLY with this JSON:
+{
+  "observations": "one or two sentences of what you see",
+  "identified": true | false,
+  "plant_name": "common name used in India, in English",
+  "local_name": ${LOCAL_NAME[language] ? `"${LOCAL_NAME[language]}, or null if there is none"` : 'null'},
+  "scientific_name": "Genus species",
+  "family": "plant family",
+  "category": "vegetable|fruit|grain|pulse|oilseed|fibre|spice|herb|flower|tree|houseplant|weed|other",
+  "confidence": 0-100,
+  "alternatives": [{"plant_name": "...", "scientific_name": "...", "confidence": 0-100, "how_to_tell": "the feature that would confirm it, under 12 words"}],
+  "hint": "if confidence is under 70 or nothing is identified: what photo would settle it, under 12 words (e.g. 'Show one full leaf and its stalk'), else null"
+}
+Give at most 2 alternatives, only plants that genuinely look similar. No emoji.`;
+
+const genus = (s) => (typeof s === 'string' ? s.trim().split(/\s+/)[0].toLowerCase() : '');
+/** Two scientific names refer to the same kind of plant when the genus matches. */
+export const sameGenus = (a, b) => !!genus(a) && genus(a) === genus(b);
+const pct = (n) => Math.round(Math.max(0, Math.min(100, Number(n) || 0)));
+
+/**
+ * Identify the plant on the stronger model (falls back to the fast one if it is not available).
+ * @returns {Promise<{identified: boolean, plant_name: string|null, local_name: string|null, display_name: string|null,
+ *   scientific_name: string|null, family: string|null, category: string|null, confidence: number,
+ *   alternatives: Array<{plant_name: string, scientific_name: string|null, confidence: number, how_to_tell: string|null}>,
+ *   observations: string|null, hint: string|null, model: string}>}
+ */
+export async function identifyPlant(imageBase64, language = 'en') {
+    const lang = LOCAL_NAME[language] ? language : 'en';
+    const parts = [{ imageBase64 }, { text: ID_PROMPT(lang) }];
+    let json;
+    let model = ID_MODEL;
+    try {
+        ({ json } = await askVisionParts({ model, parts, maxTokens: 700 }));
+    } catch (e) {
+        if (model === FAST_MODEL) throw e;
+        console.warn(`identifyPlant: ${model} failed (${e.message}); falling back to ${FAST_MODEL}`);
+        model = FAST_MODEL;
+        ({ json } = await askVisionParts({ model, parts, maxTokens: 700 }));
+    }
+    const plantName = clean(json.plant_name) || null;
+    const localName = lang === 'en' ? null : clean(json.local_name) || null;
+    return {
+        identified: !!json.identified && !!plantName,
+        plant_name: plantName,
+        local_name: localName,
+        display_name: localName || plantName,
+        scientific_name: clean(json.scientific_name) || null,
+        family: clean(json.family) || null,
+        category: clean(json.category) || null,
+        confidence: pct(json.confidence),
+        alternatives: (Array.isArray(json.alternatives) ? json.alternatives : [])
+            .filter((a) => a && clean(a.plant_name) && clean(a.plant_name).toLowerCase() !== (plantName || '').toLowerCase())
+            .slice(0, 2)
+            .map((a) => ({ plant_name: clean(a.plant_name), scientific_name: clean(a.scientific_name) || null, confidence: pct(a.confidence), how_to_tell: clean(a.how_to_tell) || null })),
+        observations: clean(json.observations) || null,
+        hint: clean(json.hint) || null,
+        model,
+    };
+}
+
+/**
+ * Full plant report. The plant is named first (stronger model) unless the farmer already told us
+ * what it is (plantType, e.g. after correcting a wrong name); the long report then runs on the fast model
+ * with that name fixed, so both agree.
+ */
+export async function analyzePlantHealth(imageBase64, plantType = null, language = 'en', plantSpecies = null) {
     const languageInstructions = {
         en: "Respond in English.",
         hi: "Respond in Hindi (हिंदी में जवाब दें).",
         te: "Respond in Telugu (తెలుగులో సమాధానం ఇవ్వండి)."
     };
 
+    let id = null;
+    if (!plantType) {
+        try {
+            id = await identifyPlant(imageBase64, language);
+        } catch (e) {
+            console.error('Plant identification error:', e.message);
+        }
+        if (id && !id.identified) {
+            return {
+                not_plant: true,
+                plant_type: null,
+                health_status: 'unknown',
+                diseases: [],
+                recommendations: [],
+                confidence: 0,
+                summary: id.hint || id.observations || 'No plant found in the photo. Take a closer photo of one plant in daylight.',
+                identification: id,
+            };
+        }
+    }
+
+    const nameLine = plantType
+        ? `This plant is: ${plantType}${plantSpecies ? ` (${plantSpecies})` : ''}, as confirmed by the farmer. Use this name for plant_type. Do not re-identify it.`
+        : id
+            ? `The plant has already been identified by a botanist as ${id.plant_name}${id.scientific_name ? ` (${id.scientific_name})` : ''}. Use exactly this plant for plant_type, plant_species and plant_family${id.local_name ? ` (the local name is ${id.local_name})` : ''}. Do not re-identify it.`
+            : 'First identify the plant type and species. The farmers are in India: use the names used in India.';
+
     const prompt = `You are an expert agricultural plant pathologist, agronomist, and soil scientist. Analyze this plant image comprehensively.
 
 ${languageInstructions[language] || languageInstructions.en}
 
-${plantType ? `The plant is identified as: ${plantType}` : "First identify the plant type and species."}
+${nameLine}
 
 Provide a COMPREHENSIVE analysis in this exact JSON format:
 {
@@ -303,11 +428,24 @@ IMPORTANT: Be accurate and provide practical, actionable advice. Return ONLY val
 
     try {
         // 8000 tokens: the full report in Hindi/Telugu is long
-        return await askVision(prompt, imageBase64, 8000);
+        const report = await askVision(prompt, imageBase64, 8000);
+        if (id) {
+            // The botanist's name wins over whatever the report model wrote.
+            report.plant_type = id.display_name;
+            report.plant_species = id.scientific_name || report.plant_species;
+            report.plant_family = id.family || report.plant_family;
+            report.identification = id;
+        } else if (plantType) {
+            report.plant_type = plantType;
+            report.plant_species = plantSpecies || report.plant_species;
+            report.identification = { identified: true, plant_name: plantType, display_name: plantType, scientific_name: plantSpecies || report.plant_species || null, confidence: null, alternatives: [], given: true };
+        }
+        return report;
     } catch (error) {
         console.error('Plant analysis error:', error);
         return {
-            plant_type: plantType || 'Unknown',
+            plant_type: id?.display_name || plantType || 'Unknown',
+            identification: id || undefined,
             health_status: 'unknown',
             diseases: [],
             recommendations: ['Please retake the photo with better lighting'],
@@ -568,14 +706,23 @@ const EMOJI_RE = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu;
 const clean = (v) => (typeof v === 'string' ? v.replace(EMOJI_RE, '').trim() : v);
 const clamp01 = (n) => Math.max(0, Math.min(1, Number(n) || 0));
 
-export async function analyzeForAR(imageBase64, language = 'en') {
+/**
+ * @param {{plant?: {plant_name: string, scientific_name?: string|null, display_name?: string|null} | null}} [opts]
+ *   plant: already identified (by identifyPlant). The name is then kept, not re-guessed every frame.
+ */
+export async function analyzeForAR(imageBase64, language = 'en', { plant = null } = {}) {
     const lang = AR_LANGUAGE[language] ? language : 'en';
+    const known = plant?.plant_name
+        ? `This plant has already been identified as ${plant.plant_name}${plant.scientific_name ? ` (${plant.scientific_name})` : ''}. Do not rename it. Use "${plant.display_name || plant.plant_name}" as plant_name. If the main plant in this frame is clearly a different kind of plant, set "same_plant" to false.`
+        : 'The farmers are in India: use the common name used in India (for example "Money plant" for Epipremnum aureum). Name the plant from what you can see (leaf shape, edge, veins, surface, variegation, growth habit), not from what crop is likely.';
     const prompt = `This is one frame from a farmer's phone camera, pointed at a plant. Look at it like an experienced agronomist standing next to them.
 ${AR_LANGUAGE[lang]}
+${known}
 
 Reply ONLY with this JSON:
 {
   "identified": true if a plant fills a reasonable part of the frame and you can name it, else false,
+  "same_plant": ${plant?.plant_name ? `true unless the main plant is clearly not ${plant.plant_name},` : 'true,'}
   "plant_name": "common name",
   "scientific_name": "Latin name or null",
   "health_score": 0-100 (100 = completely healthy),
@@ -599,10 +746,12 @@ Be honest: if the frame is blurry, dark or not a plant, set identified to false.
         const box = r.box && typeof r.box === 'object'
             ? { x: clamp01(r.box.x), y: clamp01(r.box.y), w: clamp01(r.box.w), h: clamp01(r.box.h) }
             : null;
+        const samePlant = !plant?.plant_name || r.same_plant !== false;
         return {
             identified: !!r.identified,
-            plant_name: clean(r.plant_name) || null,
-            scientific_name: clean(r.scientific_name) || null,
+            same_plant: samePlant,
+            plant_name: (samePlant && plant?.plant_name ? plant.display_name || plant.plant_name : clean(r.plant_name)) || null,
+            scientific_name: (samePlant && plant?.scientific_name ? plant.scientific_name : clean(r.scientific_name)) || null,
             health_score: Math.round(Math.max(0, Math.min(100, Number(r.health_score) || 0))),
             health_status: ['healthy', 'mild', 'needs_attention', 'serious'].includes(r.health_status) ? r.health_status : 'mild',
             headline: clean(r.headline) || null,
@@ -623,4 +772,43 @@ Be honest: if the frame is blurry, dark or not a plant, set identified to false.
         console.error('AR scan error:', error.message);
         return { identified: false, hint: AR_HINT[lang], error: error.message, language: lang, timestamp: Date.now() };
     }
+}
+
+/**
+ * Live AR with a stable name.
+ * - plant given (the overlay already locked a name): fast model only, name kept.
+ * - no plant yet: the fast model checks a plant is in view; only then the stronger model names it.
+ *   If the two disagree on the genus, the frame is read again with the stronger model's name so the
+ *   tip, fact and greeting are about the right plant.
+ * The reply carries `identity` for the overlay to send back on the next frames.
+ */
+export async function scanForAR(imageBase64, language = 'en', { plant = null } = {}) {
+    if (plant?.plant_name) return analyzeForAR(imageBase64, language, { plant });
+
+    const first = await analyzeForAR(imageBase64, language);
+    if (!first.identified) return first;
+
+    let id;
+    try {
+        id = await identifyPlant(imageBase64, language);
+    } catch (e) {
+        console.error('AR identify error:', e.message);
+        return { ...first, identity: null };
+    }
+    if (!id.identified) return { ...first, identity: null };
+
+    const identity = {
+        plant_name: id.plant_name, display_name: id.display_name, scientific_name: id.scientific_name, confidence: id.confidence,
+    };
+    const read = sameGenus(first.scientific_name, id.scientific_name) ? first : await analyzeForAR(imageBase64, language, { plant: identity });
+    return {
+        ...read,
+        identified: true,
+        same_plant: true,
+        plant_name: id.display_name,
+        scientific_name: id.scientific_name || read.scientific_name,
+        confidence: id.confidence / 100,
+        alternatives: id.alternatives,
+        identity,
+    };
 }

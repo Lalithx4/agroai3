@@ -54,6 +54,81 @@
     color: var(--ink);
 }
 
+.rep-name-conf {
+    font-size: 0.8rem;
+    color: var(--ink-3);
+}
+
+/* Name check: confirm or correct the plant's name */
+.rep-name-wrong {
+    justify-self: start;
+    align-self: flex-start;
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--ink-2);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.rep-namecheck {
+    display: grid;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--hairline-strong);
+    background: var(--surface);
+}
+
+.rep-namecheck > p {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.rep-name-alts {
+    display: grid;
+    gap: 8px;
+}
+
+.rep-name-alts button {
+    display: grid;
+    gap: 2px;
+    text-align: left;
+    padding: 10px 12px;
+    min-height: 46px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--hairline-strong);
+    background: var(--sunken);
+    font: inherit;
+    color: var(--ink);
+    cursor: pointer;
+}
+
+.rep-name-alts button:hover,
+.rep-name-alts button:focus-visible { border-color: var(--leaf); }
+.rep-name-alts b { font-weight: 600; }
+.rep-name-alts i { font-size: 0.82rem; color: var(--ink-2); }
+.rep-name-alts span { font-size: 0.82rem; color: var(--ink-3); }
+
+.rep-name-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.rep-name-form input {
+    flex: 1 1 180px;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 12px;
+    font: inherit;
+    font-size: 1rem;
+}
+
 .rep-verdict {
     display: flex;
     gap: 14px;

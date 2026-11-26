@@ -1,11 +1,29 @@
 import { NextResponse } from 'next/server';
-import { analyzeForAR } from '@/lib/bedrock';
+import { scanForAR } from '@/lib/bedrock';
+
+// First lock names the plant on the stronger model (about 8 s); later frames are quicker.
+export const maxDuration = 30;
+
+const str = (v, max = 120) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
+
+/** The plant the overlay already locked onto, sent back as JSON. Untrusted: keep only short strings. */
+function parsePlant(raw) {
+    if (typeof raw !== 'string' || !raw) return null;
+    try {
+        const p = JSON.parse(raw);
+        const plant_name = str(p?.plant_name);
+        return plant_name ? { plant_name, display_name: str(p.display_name) || plant_name, scientific_name: str(p.scientific_name) } : null;
+    } catch {
+        return null;
+    }
+}
 
 export async function POST(request) {
     try {
         const formData = await request.formData();
         const image = formData.get('image');
         const language = formData.get('language') || 'en';
+        const plant = parsePlant(formData.get('plant'));
         
         if (!image) {
             return NextResponse.json(
@@ -23,8 +41,8 @@ export async function POST(request) {
             base64Image = Buffer.from(buffer).toString('base64');
         }
 
-        // Get AR-optimized analysis
-        const arResult = await analyzeForAR(base64Image, language);
+        // Name once on the stronger model, then keep it (see scanForAR)
+        const arResult = await scanForAR(base64Image, language, { plant });
         
         return NextResponse.json(arResult);
     } catch (error) {
@@ -39,6 +57,6 @@ export async function GET() {
         status: 'AR scanner ready',
         endpoint: '/api/ar-scan',
         method: 'POST',
-        params: { image: 'File or base64 string (required)', language: 'en | hi | te (optional)' },
+        params: { image: 'File or base64 string (required)', language: 'en | hi | te (optional)', plant: 'JSON {plant_name, display_name, scientific_name} of the locked plant (optional)' },
     });
 }

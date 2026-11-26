@@ -15,12 +15,23 @@ import './ar-overlay.css';
 const SCAN_GAP_MS = 1400;
 const REQUEST_TIMEOUT_MS = 9000;
 const MISSES_BEFORE_CLEAR = 2;
-const FRAME_EDGE_PX = 640;
+// Until the plant is named, frames are sharper (species are told apart by small details) and the
+// request is slower (the stronger model names it). Once named, the name is kept and frames are lighter.
+const FRAME_EDGE_PX = 768;
+const FRAME_QUALITY = 0.78;
+const ID_FRAME_EDGE_PX = 1024;
+const ID_FRAME_QUALITY = 0.86;
+const ID_TIMEOUT_MS = 20000;
+const LOCK_CONFIDENCE = 75;   // name is locked at once at or above this; below it, two reads must agree
+
+const genus = (s) => (typeof s === 'string' ? s.trim().split(/\s+/)[0].toLowerCase() : '');
+const samePlant = (a, b) => !!a && !!b && ((!!genus(a.scientific_name) && genus(a.scientific_name) === genus(b.scientific_name))
+    || (a.plant_name || '').toLowerCase() === (b.plant_name || '').toLowerCase());
 const GRID = 9;
 
 const COPY = {
     en: {
-        searching: 'Looking for a plant', reading: 'Reading the leaf', live: 'Live', sure: (n) => `${n}% sure`,
+        searching: 'Looking for a plant', orMaybe: (n) => `or maybe ${n}?`, reading: 'Reading the leaf', live: 'Live', sure: (n) => `${n}% sure`,
         health: 'Health', tip: 'Do today', fact: 'Good to know', report: 'Full report',
         talk: 'Talk to me', hearMe: 'Tap to hear me', end: 'End', you: 'You', listening: 'Listening… just talk', thinking: 'Thinking…', speaking: 'Speaking…',
         noMic: 'The microphone is not available here.', notHeard: 'I did not catch that. Tap to try again.',
@@ -29,7 +40,7 @@ const COPY = {
         status: { healthy: 'Healthy', mild: 'Mostly fine', needs_attention: 'Needs attention', serious: 'Serious' },
     },
     hi: {
-        searching: 'पौधा ढूँढ रहा हूँ', reading: 'पत्ता पढ़ रहा हूँ', live: 'लाइव', sure: (n) => `${n}% पक्का`,
+        searching: 'पौधा ढूँढ रहा हूँ', orMaybe: (n) => `या शायद ${n}?`, reading: 'पत्ता पढ़ रहा हूँ', live: 'लाइव', sure: (n) => `${n}% पक्का`,
         health: 'सेहत', tip: 'आज करें', fact: 'काम की बात', report: 'पूरी रिपोर्ट',
         talk: 'मुझसे बात करो', hearMe: 'सुनने के लिए टैप करें', end: 'बंद करो', you: 'आप', listening: 'सुन रहा हूँ… बोलिए', thinking: 'सोच रहा हूँ…', speaking: 'बोल रहा हूँ…',
         noMic: 'यहाँ माइक्रोफ़ोन नहीं चल रहा।', notHeard: 'सुनाई नहीं दिया। फिर से टैप करें।',
@@ -38,7 +49,7 @@ const COPY = {
         status: { healthy: 'स्वस्थ', mild: 'ज़्यादातर ठीक', needs_attention: 'ध्यान चाहिए', serious: 'गंभीर' },
     },
     te: {
-        searching: 'మొక్క కోసం చూస్తున్నాను', reading: 'ఆకును చదువుతున్నాను', live: 'లైవ్', sure: (n) => `${n}% ఖచ్చితం`,
+        searching: 'మొక్క కోసం చూస్తున్నాను', orMaybe: (n) => `లేదా ${n} కావచ్చు?`, reading: 'ఆకును చదువుతున్నాను', live: 'లైవ్', sure: (n) => `${n}% ఖచ్చితం`,
         health: 'ఆరోగ్యం', tip: 'ఈ రోజు చేయండి', fact: 'తెలుసుకోండి', report: 'పూర్తి రిపోర్ట్',
         talk: 'నాతో మాట్లాడండి', hearMe: 'వినడానికి తాకండి', end: 'ఆపండి', you: 'మీరు', listening: 'వింటున్నాను… మాట్లాడండి', thinking: 'ఆలోచిస్తున్నాను…', speaking: 'మాట్లాడుతున్నాను…',
         noMic: 'ఇక్కడ మైక్ అందుబాటులో లేదు.', notHeard: 'సరిగ్గా వినపడలేదు. మళ్ళీ తాకండి.',
@@ -121,6 +132,8 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport, cal
 
     const missesRef = useRef(0);
     const lockedRef = useRef(false);
+    const identityRef = useRef(null);    // the plant's name, once settled: sent with every frame so it stays the same
+    const candidateRef = useRef(null);   // a name read once with low confidence, waiting for a second read to agree
     const boxRef = useRef(null);
     const faceRef = useRef(null);
     const voiceRef = useRef(null);
@@ -160,11 +173,15 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport, cal
         let controller = null;
         const canvas = document.createElement('canvas');
         const schedule = (ms) => { if (alive) timer = setTimeout(tick, ms); };
+        identityRef.current = null;      // names come back in the chosen language, so start over when it changes
+        candidateRef.current = null;
 
         const miss = (h) => {
             missesRef.current += 1;
             if (missesRef.current >= MISSES_BEFORE_CLEAR) {
                 lockedRef.current = false;
+                identityRef.current = null;
+                candidateRef.current = null;
                 setData(null);
                 place(null, false);
             }
@@ -176,31 +193,53 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport, cal
             const video = videoRef.current;
             if (document.hidden || !video || !video.videoWidth || talkRef.current !== 'idle' || convoOn.current) { schedule(700); return; }
 
-            const k = Math.min(1, FRAME_EDGE_PX / Math.max(video.videoWidth, video.videoHeight));
+            const identity = identityRef.current;
+            const edge = identity ? FRAME_EDGE_PX : ID_FRAME_EDGE_PX;
+            const k = Math.min(1, edge / Math.max(video.videoWidth, video.videoHeight));
             canvas.width = Math.round(video.videoWidth * k);
             canvas.height = Math.round(video.videoHeight * k);
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.72));
+            const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', identity ? FRAME_QUALITY : ID_FRAME_QUALITY));
             if (!alive || !blob) { schedule(SCAN_GAP_MS); return; }
 
             setReading(true);
             controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+            const timeout = setTimeout(() => controller.abort(), identity ? REQUEST_TIMEOUT_MS : ID_TIMEOUT_MS);
+            let gap = SCAN_GAP_MS;
             try {
                 const form = new FormData();
                 form.append('image', blob, 'frame.jpg');
                 form.append('language', language);
+                if (identity) form.append('plant', JSON.stringify(identity));
                 const res = await fetch('/api/ar-scan', { method: 'POST', body: form, signal: controller.signal });
                 const json = await res.json();
                 if (!alive) return;
-                if (json.identified && json.plant_name) {
+                if (identity && json.same_plant === false) {
+                    // Pointed at a different plant: name it again on the next frame.
+                    identityRef.current = null;
+                    candidateRef.current = null;
+                    gap = 200;
+                } else if (json.identified && json.plant_name) {
                     missesRef.current = 0;
+                    let settled = identity;
+                    if (!settled && json.identity) {
+                        const cand = candidateRef.current;
+                        if (json.identity.confidence >= LOCK_CONFIDENCE) settled = json.identity;
+                        else if (cand && samePlant(cand, json.identity)) settled = { ...json.identity, confidence: Math.max(cand.confidence, json.identity.confidence) };
+                        if (settled) { identityRef.current = settled; candidateRef.current = null; }
+                        else candidateRef.current = json.identity;
+                    }
                     if (!lockedRef.current) {
                         lockedRef.current = true;
                         setLockCount((n) => n + 1);
                         navigator.vibrate?.(12);
                     }
-                    setData(json);
+                    setData((prev) => ({
+                        ...json,
+                        alternatives: json.alternatives || (settled ? prev?.alternatives : null) || [],
+                        confidence: settled ? settled.confidence / 100 : json.confidence,
+                        unsure: !settled,
+                    }));
                     setHint('');
                     place(json.box, true);
                 } else {
@@ -211,7 +250,7 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport, cal
             } finally {
                 clearTimeout(timeout);
                 if (alive) setReading(false);
-                schedule(SCAN_GAP_MS);
+                schedule(gap);
             }
         }
 
@@ -232,7 +271,7 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport, cal
 
     // The plant greets the farmer once each time it locks onto a plant.
     useEffect(() => {
-        if (call || !data?.say || greetedFor.current === lockCount || convoOn.current) return;
+        if (call || !data?.say || data.unsure || greetedFor.current === lockCount || convoOn.current) return;
         greetedFor.current = lockCount;
         setTurns([{ who: 'plant', text: data.say }]);
         say(data.say);
@@ -406,8 +445,9 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport, cal
                         <span className="arx-live">{c.live}</span>
                         {data.confidence ? c.sure(Math.round(data.confidence * 100)) : null}
                     </p>
-                    <h2 className="arx-name" style={{ '--i': 1 }}>{data.plant_name}</h2>
+                    <h2 className="arx-name" style={{ '--i': 1 }}>{data.plant_name}{data.unsure ? '?' : ''}</h2>
                     {data.scientific_name && <p className="arx-sci" style={{ '--i': 1 }}>{data.scientific_name}</p>}
+                    {data.unsure && data.alternatives?.[0]?.plant_name && <p className="arx-sci arx-alt" style={{ '--i': 1 }}>{c.orMaybe(data.alternatives[0].plant_name)}</p>}
 
                     <div className="arx-meter" style={{ '--i': 2 }}>
                         <span className="arx-meter-label">{c.health} · {c.status[data.health_status] || ''}</span>
@@ -451,7 +491,7 @@ export default function ArOverlay({ videoRef, language = 'en', onFullReport, cal
                         {talk !== 'idle' || convoOn.current ? (
                             <button type="button" className="arx-end" onClick={endTalk}><Square size={14} aria-hidden="true" /> {c.end}</button>
                         ) : (
-                            <button type="button" className="arx-report" onClick={onFullReport}><FileText size={16} aria-hidden="true" /> {c.report}</button>
+                            <button type="button" className="arx-report" onClick={() => onFullReport?.(identityRef.current)}><FileText size={16} aria-hidden="true" /> {c.report}</button>
                         )}
                     </div>
                 </section>

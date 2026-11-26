@@ -363,7 +363,7 @@
 
 /* Short phones: keep the essentials (name, health, issue, tip, report) on screen */
 @media (max-height: 760px) and (max-width: 899px) {
-    .arx-sci,
+    .arx-sci:not(.arx-alt),
     .arx-rows li:nth-child(3) {
         display: none;
     }

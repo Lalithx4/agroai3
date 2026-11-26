@@ -16,9 +16,14 @@ import './report.css';
 
 // Below 70% the accuracy ladder found answers unreliable, so we say so plainly.
 const UNSURE_BELOW = 70;
+// The plant's name: in our naming test, wrong names still came back at up to 72%, so offer the look-alikes below 75
+// (the same line the live view uses before it settles on a name).
+const NAME_UNSURE_BELOW = 75;
 
 const COPY = {
     en: {
+        nameUnsure: 'Not sure about the name. Is it one of these?', noPlant: 'No plant found. If there is one, type its name.', pickName: 'Pick the right plant or type its name.',
+        wrongName: 'Wrong plant name?', typeName: 'Type the plant name', useName: 'Check again', nameSure: (n) => `name ${n}% sure`,
         unsure: 'Not sure yet', healthy: 'Looks healthy', serious: 'Serious problem', care: 'Needs care',
         unsureSub: (p) => `${p ? `It may be ${p}. ` : ''}Take another photo in daylight, closer to the leaf, or show it to your agriculture officer.`,
         healthySub: 'Keep checking the plant every few days.',
@@ -37,6 +42,8 @@ const COPY = {
         saved: 'Saved to your history', again: 'Scan again', talk: 'Talk to this plant', callMe: 'Call me in 30 s', phoneCall: 'Call my phone', phoneTitle: 'Your plant will call your phone', phoneName: 'Your name', phoneNum: 'Mobile number', phoneConsent: 'I agree to receive calls from my plant (CropMagix). I can say stop any time.', phoneGo: 'Call me now', phoneCancel: 'Cancel', phoneRinging: 'Calling your phone now. It will start in Telugu.', phoneErr: 'Could not place the call', phoneNotSetup: 'Phone calling is not set up yet.', callSet: 'Your plant will call you in 30 seconds. Keep the app open.',
     },
     hi: {
+        nameUnsure: 'नाम पक्का नहीं। क्या यह इनमें से कोई है?', noPlant: 'फोटो में पौधा नहीं मिला। अगर है, तो उसका नाम लिखें।', pickName: 'सही पौधा चुनें या उसका नाम लिखें।',
+        wrongName: 'पौधे का नाम गलत है?', typeName: 'पौधे का नाम लिखें', useName: 'फिर से जाँचें', nameSure: (n) => `नाम ${n}% पक्का`,
         unsure: 'अभी पक्का नहीं', healthy: 'स्वस्थ लग रहा है', serious: 'गंभीर समस्या', care: 'देखभाल चाहिए',
         unsureSub: (p) => `${p ? `शायद ${p} हो। ` : ''}दिन की रोशनी में पत्ते के पास से एक और फोटो लें, या कृषि अधिकारी को दिखाएँ।`,
         healthySub: 'हर कुछ दिन में पौधे को देखते रहें।',
@@ -55,6 +62,8 @@ const COPY = {
         saved: 'आपके इतिहास में सहेजा गया', again: 'फिर से स्कैन करें', talk: 'इस पौधे से बात करें', callMe: '30 सेकंड में कॉल करो', phoneCall: 'मेरे फ़ोन पर कॉल करो', phoneTitle: 'आपका पौधा आपके फ़ोन पर कॉल करेगा', phoneName: 'आपका नाम', phoneNum: 'मोबाइल नंबर', phoneConsent: 'मैं अपने पौधे (CropMagix) से कॉल पाने के लिए सहमत हूँ। कभी भी मना कर सकता हूँ।', phoneGo: 'अभी कॉल करो', phoneCancel: 'रद्द करें', phoneRinging: 'आपके फ़ोन पर कॉल जा रही है। शुरुआत तेलुगु में होगी, हिंदी में बोलेंगे तो हिंदी में बात होगी।', phoneErr: 'कॉल नहीं हो सकी', phoneNotSetup: 'फ़ोन कॉल अभी सेट नहीं है।', callSet: 'आपका पौधा 30 सेकंड में आपको कॉल करेगा। ऐप खुला रखें।',
     },
     te: {
+        nameUnsure: 'పేరు ఖచ్చితంగా తెలియదు. ఇది వీటిలో ఒకటా?', noPlant: 'ఫోటోలో మొక్క కనిపించలేదు. ఉంటే, దాని పేరు రాయండి.', pickName: 'సరైన మొక్కను ఎంచుకోండి లేదా పేరు రాయండి.',
+        wrongName: 'మొక్క పేరు తప్పా?', typeName: 'మొక్క పేరు రాయండి', useName: 'మళ్ళీ చూడండి', nameSure: (n) => `పేరు ${n}% ఖచ్చితం`,
         unsure: 'ఇంకా ఖచ్చితంగా తెలియదు', healthy: 'ఆరోగ్యంగా ఉంది', serious: 'తీవ్రమైన సమస్య', care: 'జాగ్రత్త అవసరం',
         unsureSub: (p) => `${p ? `బహుశా ${p} కావచ్చు. ` : ''}పగటి వెలుగులో ఆకుకు దగ్గరగా ఇంకో ఫోటో తీయండి, లేదా వ్యవసాయ అధికారికి చూపించండి.`,
         healthySub: 'కొన్ని రోజులకు ఒకసారి మొక్కను చూస్తూ ఉండండి.',
@@ -107,6 +116,44 @@ function todaySteps(r) {
     return out;
 }
 
+/**
+ * The plant's name, checked by the farmer: when the naming step was unsure (or found no plant) the look-alikes
+ * are offered right away; otherwise a small "Wrong plant name?" opens the same choices. Picking one redoes the report.
+ */
+function NameCheck({ r, c, onCorrectPlant }) {
+    const idn = r.identification;
+    const unsure = !!r.not_plant || (!!idn && !idn.given && idn.confidence != null && idn.confidence < NAME_UNSURE_BELOW);
+    const [open, setOpen] = useState(unsure);
+    const [name, setName] = useState('');
+    if (!onCorrectPlant) return null;
+    if (!open) return <button type="button" className="rep-name-wrong" onClick={() => setOpen(true)}>{c.wrongName}</button>;
+    const alts = list(idn?.alternatives).filter((a) => a.plant_name);
+    const submit = (e) => {
+        e.preventDefault();
+        if (name.trim()) onCorrectPlant(name.trim());
+    };
+    return (
+        <div className="rep-namecheck">
+            <p>{r.not_plant ? c.noPlant : unsure && alts.length ? c.nameUnsure : c.pickName}</p>
+            {alts.length > 0 && (
+                <div className="rep-name-alts">
+                    {alts.map((a) => (
+                        <button key={a.plant_name} type="button" onClick={() => onCorrectPlant(a.plant_name, a.scientific_name)}>
+                            <b>{a.plant_name}</b>
+                            {a.scientific_name && <i>{a.scientific_name}</i>}
+                            {a.how_to_tell && <span>{a.how_to_tell}</span>}
+                        </button>
+                    ))}
+                </div>
+            )}
+            <form className="rep-name-form" onSubmit={submit}>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder={c.typeName} aria-label={c.typeName} maxLength={120} />
+                <button type="submit" className="nb-btn nb-btn-secondary" disabled={!name.trim()}>{c.useName}</button>
+            </form>
+        </div>
+    );
+}
+
 function Section({ icon: Icon, title, open, children }) {
     return (
         <details className="rep-sec" open={open}>
@@ -120,7 +167,7 @@ function Section({ icon: Icon, title, open, children }) {
     );
 }
 
-export default function ScanReport({ result: r, image, language = 'en', onScanAgain, onTalk }) {
+export default function ScanReport({ result: r, image, language = 'en', onScanAgain, onTalk, onCorrectPlant }) {
     const c = COPY[language] || COPY.en;
     const [done, setDone] = useState(() => new Set());
     const [callSet, setCallSet] = useState(false);
@@ -195,7 +242,11 @@ export default function ScanReport({ result: r, image, language = 'en', onScanAg
                         <Sprout size={16} aria-hidden="true" />
                         <span className="rep-plant-name">{r.plant_type || r.plant_name || '—'}</span>
                         {r.plant_species && <i>{r.plant_species}</i>}
+                        {r.identification?.confidence != null && !r.identification.given && !r.not_plant && (
+                            <span className="rep-name-conf">{c.nameSure(Math.round(r.identification.confidence))}</span>
+                        )}
                     </p>
+                    <NameCheck r={r} c={c} onCorrectPlant={onCorrectPlant} />
                     <div className={`rep-verdict ${v.cls}`} role="status">
                         <v.Icon size={30} strokeWidth={2} aria-hidden="true" />
                         <div>
@@ -352,7 +403,7 @@ export default function ScanReport({ result: r, image, language = 'en', onScanAg
             )}
 
             <footer className="rep-actions">
-                <span className="rep-saved"><Check size={14} aria-hidden="true" /> {callSet ? c.callSet : c.saved}</span>
+                {r.not_plant ? <span /> : <span className="rep-saved"><Check size={14} aria-hidden="true" /> {callSet ? c.callSet : c.saved}</span>}
                 <div>
                     <button type="button" className="nb-btn nb-btn-secondary" onClick={onScanAgain}><RotateCcw size={16} aria-hidden="true" /> {c.again}</button>
                     <button type="button" className="nb-btn nb-btn-secondary" onClick={() => setPhoneOpen(true)}><PhoneCall size={16} aria-hidden="true" /> {c.phoneCall}</button>

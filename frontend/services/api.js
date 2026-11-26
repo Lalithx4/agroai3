@@ -55,7 +55,8 @@ async function apiRequest(endpoint, options = {}) {
     }
 }
 
-export async function analyzeHealth(imageInput, plantType = null, language = null) {
+/** plantType / plantSpecies: a name already known (from the live view or the farmer's correction); skips identification. */
+export async function analyzeHealth(imageInput, plantType = null, language = null, plantSpecies = null) {
     let imageBase64 = imageInput;
     
     if (imageInput instanceof Blob || imageInput instanceof File) {
@@ -69,6 +70,7 @@ export async function analyzeHealth(imageInput, plantType = null, language = nul
         body: JSON.stringify({
             image_base64: imageBase64,
             plant_type: plantType,
+            plant_species: plantSpecies,
             language: lang
         })
     });

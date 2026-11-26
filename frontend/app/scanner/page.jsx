@@ -137,6 +137,7 @@ export default function ScannerPage() {
     const [resultImage, setResultImage] = useState(null);
     const [cameraError, setCameraError] = useState(false);
     const [isCapturing, setIsCapturing] = useState(false);
+    const lastPhotoRef = useRef(null);   // the photo in the open report, kept so a wrong plant name can be corrected
     
     // AR mode: the live overlay runs its own scan loop (ArOverlay.jsx)
     // An answered plant call (lib/plant-call.js) opens straight into the live camera, already talking.
@@ -188,7 +189,8 @@ export default function ScannerPage() {
         }
     };
 
-    const captureImage = useCallback(async () => {
+    // plant: the name the live view already settled on ({plant_name, display_name, scientific_name}), so the report agrees with it.
+    const captureImage = useCallback(async (plant = null) => {
         if (!videoRef.current || !canvasRef.current) return;
 
         setIsCapturing(true);
@@ -199,7 +201,7 @@ export default function ScannerPage() {
         canvas.width = video.videoWidth || 1280;
         canvas.height = video.videoHeight || 720;
         canvas.getContext('2d').drawImage(video, 0, 0);
-        canvas.toBlob(async (blob) => { if (blob) await analyzeImage(blob); }, 'image/jpeg', 0.9);
+        canvas.toBlob(async (blob) => { if (blob) await analyzeImage(blob, plant); }, 'image/jpeg', 0.9);
     }, []);
 
     const handleFileSelect = async (e) => {
@@ -207,34 +209,35 @@ export default function ScannerPage() {
         if (file) { setIsAnalyzing(true); await analyzeImage(file); e.target.value = ''; }
     };
 
-    const analyzeImage = async (imageBlob) => {
+    const analyzeImage = async (imageBlob, plant = null, imageUrl = null) => {
         try {
-            const imageUrl = URL.createObjectURL(imageBlob);
-            setResultImage(imageUrl);
-            const result = await analyzeHealth(imageBlob);
-            if (result) {
-                setAnalysisResult(result);
+            const url = imageUrl || URL.createObjectURL(imageBlob);
+            lastPhotoRef.current = { blob: imageBlob, url };
+            setResultImage(url);
+            const result = await analyzeHealth(imageBlob, plant?.display_name || plant?.plant_name || null, null, plant?.scientific_name || null);
+            if (!result) throw new Error('empty result');
+            setAnalysisResult(result);
+            if (!result.not_plant) {
                 // Save to local cache
-                addScanToHistory({ ...result, image: imageUrl, timestamp: Date.now() });
+                addScanToHistory({ ...result, image: url, timestamp: Date.now() });
                 // Save to Supabase for persistence
                 saveScanHistory(result).catch(err => console.log('Supabase save error:', err));
-                showToast(t('analysisResult'), 'success');
-            } else {
-                // Fallback demo result
-                setAnalysisResult({
-                    health_status: 'healthy',
-                    plant_name: 'Tomato Plant',
-                    confidence: 0.92,
-                    diseases: [],
-                    recommendations: ['Keep watering regularly', 'Good sunlight exposure', 'Monitor for pests']
-                });
             }
+            showToast(t('analysisResult'), 'success');
         } catch {
             showToast(t('analysisFailed'), 'error');
             setAnalysisResult(null);
         } finally {
             setIsAnalyzing(false);
         }
+    };
+
+    // The farmer says the name is wrong: redo the report for the same photo with their name.
+    const correctPlant = async (name, scientific = null) => {
+        const photo = lastPhotoRef.current;
+        if (!photo || !name) return;
+        setIsAnalyzing(true);
+        await analyzeImage(photo.blob, { plant_name: name, scientific_name: scientific }, photo.url);
     };
 
     const closeResult = () => {
@@ -291,7 +294,7 @@ export default function ScannerPage() {
                     videoRef={videoRef}
                     language={call?.language || language}
                     call={call}
-                    onFullReport={() => { setIsARMode(false); captureImage(); }}
+                    onFullReport={(plant) => { setIsARMode(false); captureImage(plant); }}
                 />
             )}
 
@@ -381,10 +384,12 @@ export default function ScannerPage() {
                 {analysisResult && (
                     <div className="result-content">
                         <ScanReport
+                            key={`${analysisResult.plant_type}-${analysisResult.identification?.given ? 'given' : 'auto'}`}
                             result={analysisResult}
                             image={resultImage}
                             language={language}
                             onScanAgain={closeResult}
+                            onCorrectPlant={correctPlant}
                             onTalk={cameraError ? null : () => { closeResult(); setIsARMode(true); }}
                         />
                     </div>
